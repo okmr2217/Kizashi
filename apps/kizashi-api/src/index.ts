@@ -6,6 +6,7 @@ import threadsAccountsRoutes from "./routes/threadsAccounts";
 import groupsRoutes from "./routes/groups";
 import projectsRoutes from "./routes/projects";
 import draftsRoutes from "./routes/drafts";
+import { scheduled } from "./cron";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -25,4 +26,7 @@ app.route("/groups", groupsRoutes);
 app.route("/projects", projectsRoutes);
 app.route("/drafts", draftsRoutes);
 
-export default app;
+export default {
+  fetch: app.fetch,
+  scheduled,
+};
