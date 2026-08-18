@@ -70,7 +70,6 @@ threadsAccounts.get("/oauth/callback", async (c) => {
       shortLivedAccessToken: shortLived.access_token,
     });
     const profile = await fetchThreadsProfile({
-      threadsUserId: shortLived.user_id,
       accessToken: longLived.access_token,
     });
 
@@ -80,7 +79,7 @@ threadsAccounts.get("/oauth/callback", async (c) => {
     const existing = await c.env.DB.prepare(
       "SELECT id FROM threads_accounts WHERE user_id = ? AND threads_user_id = ?",
     )
-      .bind(userId, shortLived.user_id)
+      .bind(userId, profile.id)
       .first<{ id: string }>();
 
     let accountId: string;
@@ -96,14 +95,14 @@ threadsAccounts.get("/oauth/callback", async (c) => {
       await c.env.DB.prepare(
         "INSERT INTO threads_accounts (id, user_id, threads_user_id, display_name, access_token_encrypted, token_expires_at) VALUES (?, ?, ?, ?, ?, ?)",
       )
-        .bind(accountId, userId, shortLived.user_id, profile.username ?? null, encrypted, tokenExpiresAt)
+        .bind(accountId, userId, profile.id, profile.username ?? null, encrypted, tokenExpiresAt)
         .run();
     }
 
     return c.json({
       status: "connected",
       threads_account_id: accountId,
-      threads_user_id: shortLived.user_id,
+      threads_user_id: profile.id,
       display_name: profile.username ?? null,
       token_expires_at: tokenExpiresAt,
     });

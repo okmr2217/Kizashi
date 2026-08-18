@@ -61,7 +61,7 @@ kizashi/
 ## 現在の実装状況
 （Phaseが完了するごとにこのセクションを更新する）
 - [x] Phase 0: 基盤構築
-- [ ] Phase 1: Threads連携の疎通確認
+- [x] Phase 1: Threads連携の疎通確認
 - [ ] Phase 2: Draft管理の最小機能
 - [ ] Phase 3: 予約投稿の自動実行
 - [ ] Phase 4: 実測エンゲージメント取得

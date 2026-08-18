@@ -8,7 +8,7 @@
     {
       "binding": "DB",
       "database_name": "kizashi-db",
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "database_id": "85ce7e75-4cda-48b7-a728-e56eae944788",
       "migrations_dir": "migrations"
     }
   ]

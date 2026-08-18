@@ -78,8 +78,8 @@ export interface ThreadsProfile {
   username?: string;
 }
 
-export async function fetchThreadsProfile(params: { threadsUserId: string; accessToken: string }): Promise<ThreadsProfile> {
-  const url = new URL(`${GRAPH_BASE}/${params.threadsUserId}`);
+export async function fetchThreadsProfile(params: { accessToken: string }): Promise<ThreadsProfile> {
+  const url = new URL(`${GRAPH_BASE}/me`);
   url.searchParams.set("fields", "id,username");
   url.searchParams.set("access_token", params.accessToken);
   const res = await fetch(url.toString());
