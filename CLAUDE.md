@@ -13,7 +13,7 @@ Threads投稿のAI生成・リスト管理・予約投稿ツール「Kizashi」�
 ```
 kizashi/
   apps/
-    kizashi-web/    # Next.js（フロントエンド）
+    kizashi-web/    # Next.js（フロントエンド、OpenNext for CloudflareでWorkersにデプロイ）
     kizashi-api/     # Cloudflare Workers（メインAPI・Cron）
     kizashi-mcp/      # Cloudflare Workers（MCPサーバー、別デプロイ）
   packages/
@@ -24,7 +24,7 @@ kizashi/
 ```
 
 ## 技術スタック
-- フロントエンド: Next.js, Tailwind CSS, shadcn/ui, Vercelデプロイ
+- フロントエンド: Next.js, Tailwind CSS, shadcn/ui。`@opennextjs/cloudflare` でビルドし、Cloudflare Workers（`kizashi-web`）にデプロイ（Vercelは使用しない）
 - バックエンド: Cloudflare Workers（`kizashi-api` / `kizashi-mcp` は別Workerとしてデプロイするが、`packages/kizashi-core` のロジックを共有する）
 - DB: Cloudflare D1（SQLite）
 - 認証: このプロダクト単体で完結する独自認証（他Parittoプロダクトとの統合はしない）
@@ -65,6 +65,12 @@ kizashi/
 - [ ] Phase 5: AI生成（内部）
 - [ ] Phase 6: MCP公開・APIキー管理
 - [ ] Phase 7: 複数アカウントUI仕上げ（`docs/design-ui.md`のデザイントークンをshadcn/uiテーマへ正式統合する作業を含む）
+
+### デプロイ状況
+- `kizashi-api` / `kizashi-mcp` / `kizashi-web` の3 Workerとも Cloudflareへデプロイ済み（`https://kizashi-api.okumuradaichi2007.workers.dev` / `https://kizashi-mcp.okumuradaichi2007.workers.dev` / `https://kizashi-web.okumuradaichi2007.workers.dev`）
+- `kizashi-web` は `@opennextjs/cloudflare` を導入（`apps/kizashi-web/wrangler.jsonc`, `open-next.config.ts`）。デプロイは `pnpm --filter kizashi-web cf:deploy`
+- `kizashi-api` のWorkers Secrets（`TOKEN_ENCRYPTION_KEY` / `AUTH_SESSION_SECRET` / `FRONTEND_ORIGIN`）は設定済み。`THREADS_APP_ID` / `THREADS_APP_SECRET` / `THREADS_REDIRECT_URI` は現状プレースホルダーのため、実際のThreads OAuth連携には正しい値の再設定（`wrangler secret put`）が必要
+- `kizashi-mcp` の `wrangler.jsonc` の `database_id` は `kizashi-api` と同じD1 (`kizashi-db`) を指すよう修正済み
 
 ### 補足（Draft管理統合時点の暫定事項）
 - kizashi-webのDraft一覧・詳細画面は、`docs/design-ui.md`の方向性（温かみのあるニュートラル基調＋グリーン系アクセント）を反映した独自のTailwindトークン（`globals.css`内の`--kz-*`変数、`font-kz-*`/`bg-kz-*`等のユーティリティ）でスタイリングしている。shadcn/ui本体（`components.json`, `ui/button.tsx`等）はBase UIの挙動レイヤーとして温存しており、正式なトークン統合（`--kz-*`を廃止しshadcn標準トークンに一本化する等）はPhase 7で行う想定
