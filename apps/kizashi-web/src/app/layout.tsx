@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { HeaderNav } from "@/components/header-nav";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -26,14 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               </span>
               Kizashi
             </Link>
-            <nav className="text-sm">
-              <Link
-                href="/drafts"
-                className="border-b-2 border-kz-accent pb-0.5 font-semibold text-kz-ink"
-              >
-                Draft一覧
-              </Link>
-            </nav>
+            <HeaderNav />
           </div>
         </header>
         <main className="flex flex-1 flex-col bg-kz-paper-dim">{children}</main>

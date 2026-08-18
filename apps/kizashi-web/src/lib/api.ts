@@ -88,10 +88,27 @@ async function serverCookieHeader(): Promise<string | undefined> {
   return session ? `${SESSION_COOKIE_NAME}=${session.value}` : undefined;
 }
 
+async function getServerFetcher(): Promise<typeof fetch | undefined> {
+  if (typeof window !== "undefined") return undefined;
+  // On Cloudflare Workers, calling the API's *.workers.dev URL via the global
+  // fetch() triggers Cloudflare error 1042 (Workers cannot fetch another
+  // Cloudflare-proxied origin directly). Route through the service binding
+  // instead; falls back to undefined for `next dev`, where no binding exists.
+  try {
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    const { env } = await getCloudflareContext({ async: true });
+    const api = (env as { API?: { fetch: typeof fetch } }).API;
+    return api ? api.fetch.bind(api) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const cookieHeader = await serverCookieHeader();
+  const fetcher = (await getServerFetcher()) ?? fetch;
 
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const res = await fetcher(`${API_BASE_URL}${path}`, {
     ...init,
     credentials: "include",
     headers: {
@@ -172,6 +189,18 @@ export const api = {
   listProjects: () => request<{ projects: Project[] }>("/projects"),
   listThreadsAccounts: () =>
     request<{ accounts: ThreadsAccount[] }>("/threads-accounts"),
+
+  signup: (input: { email: string; password: string }) =>
+    request<{ id: string; email: string }>("/auth/signup", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  login: (input: { email: string; password: string }) =>
+    request<{ id: string; email: string }>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  logout: () => request<{ ok: true }>("/auth/logout", { method: "POST" }),
 };
 
 export { ApiError };

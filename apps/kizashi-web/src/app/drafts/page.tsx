@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { api, type DraftStatus } from "@/lib/api";
+import { redirect } from "next/navigation";
+import { api, ApiError, type Draft, type DraftStatus, type Group, type Project, type ThreadsAccount } from "@/lib/api";
 import { DraftFilters } from "@/components/draft-filters";
 import { NewDraftForm } from "@/components/new-draft-form";
 import { StatusBadge } from "@/components/status-badge";
@@ -25,13 +26,24 @@ export default async function DraftsPage({ searchParams }: DraftsPageProps) {
     rating_min: params.rating_min ? Number(firstValue(params.rating_min)) : undefined,
   };
 
-  const [{ drafts }, { groups }, { projects }, { accounts: threadsAccounts }] =
-    await Promise.all([
+  let drafts: Draft[], groups: Group[], projects: Project[], threadsAccounts: ThreadsAccount[];
+  try {
+    const [draftsRes, groupsRes, projectsRes, accountsRes] = await Promise.all([
       api.listDrafts(filters),
       api.listGroups(),
       api.listProjects(),
       api.listThreadsAccounts(),
     ]);
+    drafts = draftsRes.drafts;
+    groups = groupsRes.groups;
+    projects = projectsRes.projects;
+    threadsAccounts = accountsRes.accounts;
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 401) {
+      redirect("/login");
+    }
+    throw err;
+  }
 
   const groupNameById = new Map(groups.map((g) => [g.id, g.name]));
 

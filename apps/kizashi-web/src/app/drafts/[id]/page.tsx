@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { DraftDetailForm } from "@/components/draft-detail-form";
 import { StatusBadge } from "@/components/status-badge";
@@ -34,6 +34,9 @@ export default async function DraftDetailPage({ params }: DraftDetailPageProps) 
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) {
       notFound();
+    }
+    if (err instanceof ApiError && err.status === 401) {
+      redirect("/login");
     }
     throw err;
   }

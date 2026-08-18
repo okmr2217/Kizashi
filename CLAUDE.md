@@ -71,10 +71,14 @@ kizashi/
 - `kizashi-web` は `@opennextjs/cloudflare` を導入（`apps/kizashi-web/wrangler.jsonc`, `open-next.config.ts`）。デプロイは `pnpm --filter kizashi-web cf:deploy`
 - `kizashi-api` のWorkers Secrets（`TOKEN_ENCRYPTION_KEY` / `AUTH_SESSION_SECRET` / `FRONTEND_ORIGIN`）は設定済み。`THREADS_APP_ID` / `THREADS_APP_SECRET` / `THREADS_REDIRECT_URI` は現状プレースホルダーのため、実際のThreads OAuth連携には正しい値の再設定（`wrangler secret put`）が必要
 - `kizashi-mcp` の `wrangler.jsonc` の `database_id` は `kizashi-api` と同じD1 (`kizashi-db`) を指すよう修正済み
+- `kizashi-web`のSSR（Draft一覧・詳細）からkizashi-apiを呼ぶ処理は、`*.workers.dev`同士の直接fetchだとCloudflareのエラー1042（Worker間でCloudflare IP宛の直接fetchはブロックされる）が発生するため、`wrangler.jsonc`の`services`バインディング（`API` → `kizashi-api`）経由で呼び出す（`apps/kizashi-web/src/lib/api.ts`の`getServerFetcher`）。ブラウザからの直接呼び出し（ログイン/サインアップ等のクライアントコンポーネント）はこの制約を受けないため通常のfetchのまま
+
+### ログイン/サインアップ画面
+- 最小構成のログイン/サインアップ画面を`apps/kizashi-web/src/app/login/page.tsx`に実装済み（メール+パスワードのみ、`docs/design-ui.md`のトンマナに準拠したカスタムUI）。Phase 7で予定している複数アカウント対応・オンボーディングの本実装とは別に、動作確認のため先行実装したもの
+- 未ログイン状態で`/drafts`・`/drafts/:id`にアクセスすると`/login`にリダイレクトされる。ログアウトはヘッダーの「ログアウト」ボタンから
 
 ### 補足（Draft管理統合時点の暫定事項）
 - kizashi-webのDraft一覧・詳細画面は、`docs/design-ui.md`の方向性（温かみのあるニュートラル基調＋グリーン系アクセント）を反映した独自のTailwindトークン（`globals.css`内の`--kz-*`変数、`font-kz-*`/`bg-kz-*`等のユーティリティ）でスタイリングしている。shadcn/ui本体（`components.json`, `ui/button.tsx`等）はBase UIの挙動レイヤーとして温存しており、正式なトークン統合（`--kz-*`を廃止しshadcn標準トークンに一本化する等）はPhase 7で行う想定
-- ログイン画面が未実装のため、kizashi-webから実際にDraft一覧・詳細を閲覧するには、現状APIを直接叩いてサインアップ・Threads OAuth連携を済ませ、セッションCookieを持った状態でアクセスする必要がある
 
 ---
 
