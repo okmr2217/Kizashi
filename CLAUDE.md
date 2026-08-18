@@ -38,11 +38,8 @@ kizashi/
 テーブル定義は `docs/Kizashi 設計書 v1.md` の「3. DBスキーマ設計」セクションが正。マイグレーションを書く際は必ずそちらと差分がないか確認する。
 
 現在マイグレーション済みのテーブル（`apps/kizashi-api/migrations/`）:
-- `users`
-- `threads_accounts`
-
-未着手のテーブル（design.mdに定義済み、マイグレーション未作成）:
-- `groups` / `projects` / `project_files` / `drafts` / `draft_engagement_snapshots` / `api_keys`
+- `users` / `threads_accounts`（0001）
+- `groups` / `projects` / `project_files` / `drafts` / `draft_engagement_snapshots` / `api_keys`（0002）
 
 ## 用語
 - **Draft**: AIが提案した投稿内容の1件。生成→リスト管理→予約投稿の対象となる単位
@@ -61,13 +58,17 @@ kizashi/
 ## 現在の実装状況
 （Phaseが完了するごとにこのセクションを更新する）
 - [x] Phase 0: 基盤構築
-- [x] Phase 1: Threads連携の疎通確認
-- [ ] Phase 2: Draft管理の最小機能
+- [x] Phase 1: Threads連携の疎通確認（独自認証(signup/login/セッションCookie)とThreads OAuth連携（`/threads-accounts/oauth/start` `/callback`）を実装、ローカル/リモートでの疎通確認・実投稿まで完了。ログイン画面のUIは未着手）
+- [x] Phase 2: Draft管理の最小機能（groups/projects/project_filesのCRUD、drafts手動作成・編集・削除・評価・一覧フィルタAPI（すべて`requireAuth`によるセッション認証必須）、Draft一覧/詳細画面まで実装。AI生成・予約投稿は未実装）
 - [ ] Phase 3: 予約投稿の自動実行
 - [ ] Phase 4: 実測エンゲージメント取得
 - [ ] Phase 5: AI生成（内部）
 - [ ] Phase 6: MCP公開・APIキー管理
-- [ ] Phase 7: 複数アカウントUI仕上げ
+- [ ] Phase 7: 複数アカウントUI仕上げ（`docs/design-ui.md`のデザイントークンをshadcn/uiテーマへ正式統合する作業を含む）
+
+### 補足（Draft管理統合時点の暫定事項）
+- kizashi-webのDraft一覧・詳細画面は、`docs/design-ui.md`の方向性（温かみのあるニュートラル基調＋グリーン系アクセント）を反映した独自のTailwindトークン（`globals.css`内の`--kz-*`変数、`font-kz-*`/`bg-kz-*`等のユーティリティ）でスタイリングしている。shadcn/ui本体（`components.json`, `ui/button.tsx`等）はBase UIの挙動レイヤーとして温存しており、正式なトークン統合（`--kz-*`を廃止しshadcn標準トークンに一本化する等）はPhase 7で行う想定
+- ログイン画面が未実装のため、kizashi-webから実際にDraft一覧・詳細を閲覧するには、現状APIを直接叩いてサインアップ・Threads OAuth連携を済ませ、セッションCookieを持った状態でアクセスする必要がある
 
 ---
 

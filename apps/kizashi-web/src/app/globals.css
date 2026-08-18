@@ -128,3 +128,58 @@
     @apply font-sans;
   }
 }
+
+/* ---------------------------------------------------------------------
+ * Kizashi固有のデザイントークン（docs/design-ui.md のグリーン系アクセント）
+ * shadcn/ui標準トークン（--background等、上記）はBase UIコンポーネント用に
+ * 残しつつ、Draft一覧・詳細などプロダクト画面はこちらの--kz-*系トークンで
+ * スタイリングする。正式なshadcn/uiテーマへの統合はPhase 7で行う。
+ * --------------------------------------------------------------------- */
+:root {
+  --kz-ink: #1b1712;
+  --kz-ink-soft: #3a342c;
+  --kz-paper: #faf6ee;
+  --kz-paper-dim: #f1ebdd;
+  --kz-surface: #ffffff;
+  --kz-surface-2: #f5f0e4;
+  --kz-border: #e3dbc8;
+  --kz-muted: #8c8371;
+  --kz-accent: #3e7a46;
+  --kz-accent-soft: #e6efdf;
+  --kz-accent-ink: #20431f;
+  --kz-amber: #c4832a;
+  --kz-amber-soft: #f6e7ce;
+  --kz-red: #b0442e;
+  --kz-red-soft: #f5e1da;
+  --kz-blue: #3e6a8c;
+  --kz-blue-soft: #dfe9f0;
+  --kz-shadow: 0 1px 2px rgba(27, 23, 18, 0.06), 0 8px 24px -12px rgba(27, 23, 18, 0.18);
+}
+
+@theme inline {
+  --color-kz-ink: var(--kz-ink);
+  --color-kz-ink-soft: var(--kz-ink-soft);
+  --color-kz-paper: var(--kz-paper);
+  --color-kz-paper-dim: var(--kz-paper-dim);
+  --color-kz-surface: var(--kz-surface);
+  --color-kz-surface-2: var(--kz-surface-2);
+  --color-kz-border: var(--kz-border);
+  --color-kz-muted: var(--kz-muted);
+  --color-kz-accent: var(--kz-accent);
+  --color-kz-accent-soft: var(--kz-accent-soft);
+  --color-kz-accent-ink: var(--kz-accent-ink);
+  --color-kz-amber: var(--kz-amber);
+  --color-kz-amber-soft: var(--kz-amber-soft);
+  --color-kz-red: var(--kz-red);
+  --color-kz-red-soft: var(--kz-red-soft);
+  --color-kz-blue: var(--kz-blue);
+  --color-kz-blue-soft: var(--kz-blue-soft);
+
+  --font-kz-sans: "Zen Kaku Gothic New", "Hiragino Sans", sans-serif;
+  --font-kz-serif: "Shippori Mincho", serif;
+  --font-kz-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+.kz-shadow {
+  box-shadow: var(--kz-shadow);
+}

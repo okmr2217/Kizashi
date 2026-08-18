@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "hono": "^4",
-    "kizashi-core": "workspace:*"
+    "kizashi-core": "workspace:*",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5",
