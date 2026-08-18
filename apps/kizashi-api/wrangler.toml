@@ -1,0 +1,13 @@
+name = "kizashi-api"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "kizashi-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[vars]
+# 開発用: 認証未実装フェーズの単一デフォルトユーザーID（マイグレーションでseedされる）
+DEFAULT_USER_ID = "user_dev0000000000000000000000000"

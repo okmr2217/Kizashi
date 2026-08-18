@@ -55,14 +55,18 @@ kizashi/
 
 ## 現在の実装状況
 （Phaseが完了するごとにこのセクションを更新する）
-- [ ] Phase 0: 基盤構築
-- [ ] Phase 1: Threads連携の疎通確認
-- [ ] Phase 2: Draft管理の最小機能
+- [x] Phase 0: 基盤構築（pnpmモノレポ、kizashi-core、kizashi-api(Hono+D1)、kizashi-web(Next.js)の雛形。kizashi-mcpは未着手）
+- [ ] Phase 1: Threads連携の疎通確認（OAuth未実装。threads_accountsテーブルとGET一覧APIのみ先行実装）
+- [x] Phase 2: Draft管理の最小機能（groups/projects/project_filesのCRUD、drafts手動作成・編集・削除・評価・一覧フィルタAPI、Draft一覧/詳細画面まで実装。AI生成・予約投稿は未実装）
 - [ ] Phase 3: 予約投稿の自動実行
 - [ ] Phase 4: 実測エンゲージメント取得
 - [ ] Phase 5: AI生成（内部）
 - [ ] Phase 6: MCP公開・APIキー管理
 - [ ] Phase 7: 複数アカウントUI仕上げ
+
+### 補足（Phase 2実装時点の暫定事項）
+- 独自認証（signup/login）は未実装。`apps/kizashi-api` は全リクエストを `wrangler.toml` の `DEFAULT_USER_ID`（マイグレーションでseedした開発用ユーザー）として扱う暫定ミドルウェア（`src/middleware/auth.ts`）で動いている。認証実装時に置き換えること
+- Threads OAuth連携も未実装のため、開発用のダミー `threads_accounts` レコードをマイグレーションでseedしている（`apps/kizashi-api/migrations/0002_seed_dev_user.sql`）
 ```
 
 ---

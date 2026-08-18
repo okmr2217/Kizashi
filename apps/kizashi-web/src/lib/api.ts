@@ -1,0 +1,159 @@
+const API_BASE_URL = process.env.NEXT_PUBLIC_KIZASHI_API_URL ?? "http://localhost:8787";
+
+export type DraftStatus =
+  | "draft"
+  | "scheduled"
+  | "ready_to_publish"
+  | "published"
+  | "failed";
+
+export interface Draft {
+  id: string;
+  user_id: string;
+  threads_account_id: string;
+  group_id: string | null;
+  project_id: string | null;
+  parent_draft_id: string | null;
+  content: string;
+  status: DraftStatus;
+  rating: number | null;
+  scheduled_at: string | null;
+  can_publish_after_parent: number;
+  published_at: string | null;
+  threads_post_id: string | null;
+  failure_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EngagementSnapshot {
+  id: string;
+  draft_id: string;
+  snapshot_stage: "1h" | "24h" | "72h" | "7d";
+  fetched_at: string;
+  views: number | null;
+  likes: number | null;
+  replies: number | null;
+  reposts: number | null;
+  quotes: number | null;
+  fetch_failed: number;
+}
+
+export interface Group {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Project {
+  id: string;
+  user_id: string;
+  name: string;
+  default_group_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ThreadsAccount {
+  id: string;
+  display_name: string | null;
+  threads_user_id: string;
+  is_active: number;
+}
+
+class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public details?: unknown
+  ) {
+    super(message);
+  }
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...init?.headers,
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    let details: unknown;
+    try {
+      details = await res.json();
+    } catch {
+      // ignore body parse failure
+    }
+    throw new ApiError(`Request to ${path} failed with ${res.status}`, res.status, details);
+  }
+
+  if (res.status === 204) {
+    return undefined as T;
+  }
+  return (await res.json()) as T;
+}
+
+export interface DraftFilters {
+  account_id?: string;
+  group_id?: string;
+  status?: DraftStatus;
+  rating_min?: number;
+}
+
+export function buildDraftQuery(filters: DraftFilters): string {
+  const params = new URLSearchParams();
+  if (filters.account_id) params.set("account_id", filters.account_id);
+  if (filters.group_id) params.set("group_id", filters.group_id);
+  if (filters.status) params.set("status", filters.status);
+  if (filters.rating_min) params.set("rating_min", String(filters.rating_min));
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+}
+
+export const api = {
+  listDrafts: (filters: DraftFilters = {}) =>
+    request<{ drafts: Draft[] }>(`/drafts${buildDraftQuery(filters)}`),
+  getDraft: (id: string) =>
+    request<{ draft: Draft; engagement_snapshots: EngagementSnapshot[] }>(`/drafts/${id}`),
+  createDraft: (input: {
+    threads_account_id: string;
+    group_id?: string | null;
+    project_id?: string | null;
+    content: string;
+    rating?: number | null;
+  }) =>
+    request<{ draft: Draft }>("/drafts", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  updateDraft: (
+    id: string,
+    input: Partial<{
+      content: string;
+      group_id: string | null;
+      project_id: string | null;
+      rating: number | null;
+      status: DraftStatus;
+    }>
+  ) =>
+    request<{ draft: Draft }>(`/drafts/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+  deleteDraft: (id: string) =>
+    request<void>(`/drafts/${id}`, { method: "DELETE" }),
+
+  listGroups: () => request<{ groups: Group[] }>("/groups"),
+  listProjects: () => request<{ projects: Project[] }>("/projects"),
+  listThreadsAccounts: () =>
+    request<{ threads_accounts: ThreadsAccount[] }>("/threads-accounts"),
+};
+
+export { ApiError };
