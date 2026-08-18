@@ -1,13 +1,10 @@
 # CLAUDE.md
 
-```markdown
-# Kizashi
-
-Threads投稿のAI生成・リスト管理・予約投稿ツール。
+Threads投稿のAI生成・リスト管理・予約投稿ツール「Kizashi」。
 
 ## ドキュメント
-- 要件定義書: `docs/requirements.md`
-- 設計書: `docs/design.md`
+- 要件定義書: `docs/Kizashi 要件定義書 v3.md`
+- 設計書: `docs/Kizashi 設計書 v1.md`
 
 実装方針で迷ったら、まずこの2つを参照すること。仕様の齟齬に気づいた場合はコードを推測で進めず確認する。
 
@@ -21,8 +18,8 @@ kizashi/
   packages/
     kizashi-core/    # create_draft等、api/mcp両方から呼ぶ共有ロジック
   docs/
-    requirements.md
-    design.md
+    Kizashi 要件定義書 v3.md
+    Kizashi 設計書 v1.md
 ```
 
 ## 技術スタック
@@ -34,10 +31,17 @@ kizashi/
 ## Worker分離の原則
 - `kizashi-api` と `kizashi-mcp` はデプロイ単位として完全に別Worker
 - ただし `create_draft` などのコアロジックは `packages/kizashi-core` に置き、両方からimportして使う（ロジックの重複を作らない）
-- `kizashi-mcp` は外部AI（Claude/ChatGPT）向けの読み取り・書き込みツールを公開する。エンドポイントを増やす際は `docs/design.md` のMCPツール表を更新すること
+- `kizashi-mcp` は外部AI（Claude/ChatGPT）向けの読み取り・書き込みツールを公開する。エンドポイントを増やす際は `docs/Kizashi 設計書 v1.md` のMCPツール表を更新すること
 
 ## DBスキーマ
-テーブル定義は `docs/design.md` の「DBスキーマ設計」セクションが正。マイグレーションを書く際は必ずそちらと差分がないか確認する。
+テーブル定義は `docs/Kizashi 設計書 v1.md` の「3. DBスキーマ設計」セクションが正。マイグレーションを書く際は必ずそちらと差分がないか確認する。
+
+現在マイグレーション済みのテーブル（`apps/kizashi-api/migrations/`）:
+- `users`
+- `threads_accounts`
+
+未着手のテーブル（design.mdに定義済み、マイグレーション未作成）:
+- `groups` / `projects` / `project_files` / `drafts` / `draft_engagement_snapshots` / `api_keys`
 
 ## 用語
 - **Draft**: AIが提案した投稿内容の1件。生成→リスト管理→予約投稿の対象となる単位
@@ -55,7 +59,7 @@ kizashi/
 
 ## 現在の実装状況
 （Phaseが完了するごとにこのセクションを更新する）
-- [ ] Phase 0: 基盤構築
+- [x] Phase 0: 基盤構築
 - [ ] Phase 1: Threads連携の疎通確認
 - [ ] Phase 2: Draft管理の最小機能
 - [ ] Phase 3: 予約投稿の自動実行
@@ -63,7 +67,6 @@ kizashi/
 - [ ] Phase 5: AI生成（内部）
 - [ ] Phase 6: MCP公開・APIキー管理
 - [ ] Phase 7: 複数アカウントUI仕上げ
-```
 
 ---
 
@@ -77,7 +80,7 @@ Claude Codeへの投げ方は、**Plan Mode前提で「タスクの範囲を明�
 [やりたいこと]を実装したい。
 
 対象: apps/kizashi-api（または該当app）
-参照: docs/design.md の「[該当セクション名]」
+参照: docs/Kizashi 設計書 v1.md の「[該当セクション名]」
 
 まずPlan Modeで実装方針とタスク分解を出して。
 - 影響範囲（新規作成/変更するファイル）
@@ -98,7 +101,7 @@ Kizashiのモノレポを初期化したい。
 以下をPlan Modeでタスク分解して:
 1. apps/kizashi-web, apps/kizashi-api, apps/kizashi-mcp, packages/kizashi-core のディレクトリと最小構成
 2. kizashi-apiにWrangler設定（D1バインディング含む）
-3. usersテーブルとthreads_accountsテーブルのD1マイグレーション（docs/design.md のスキーマ通り）
+3. usersテーブルとthreads_accountsテーブルのD1マイグレーション（docs/Kizashi 設計書 v1.md のスキーマ通り）
 
 このタスクでは認証ロジックやAPI実装はまだ書かない。雛形と疎通確認まで。
 ```
@@ -109,8 +112,8 @@ Kizashiのモノレポを初期化したい。
 Threads OAuth連携を実装したい。
 
 対象: apps/kizashi-api
-参照: docs/design.md の「API設計」内 /threads-accounts 関連、
-      docs/requirements.md の「Threads API連携の要点」
+参照: docs/Kizashi 設計書 v1.md の「API設計」内 /threads-accounts 関連、
+      docs/Kizashi 要件定義書 v3.md の「Threads API連携の要点」
 
 Plan Modeでタスク分解して:
 - /threads-accounts/oauth/start, /callback の実装
@@ -126,8 +129,8 @@ OAuthの実ブラウザ操作・認可は自分で行うので、そこはスク
 予約投稿の自動実行Cronを実装したい。
 
 対象: apps/kizashi-api
-参照: docs/design.md の「Cron内部処理」、
-      requirements.md の「予約投稿機能」（リプライ順序制御の記述）
+参照: docs/Kizashi 設計書 v1.md の「Cron内部処理」、
+      docs/Kizashi 要件定義書 v3.md の「予約投稿機能」（リプライ順序制御の記述）
 
 Plan Modeで方針を出して。特に以下は事前にレビューしたい:
 - リプライの順序制御（親投稿完了→can_publish_after_parentを立てる部分）の実装方式

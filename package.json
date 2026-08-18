@@ -1,0 +1,20 @@
+{
+  "name": "kizashi",
+  "private": true,
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev:web": "pnpm --filter kizashi-web dev",
+    "dev:api": "pnpm --filter kizashi-api dev",
+    "dev:mcp": "pnpm --filter kizashi-mcp dev"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "unrs-resolver",
+      "workerd"
+    ]
+  }
+}
