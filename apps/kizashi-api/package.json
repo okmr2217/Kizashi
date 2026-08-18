@@ -7,13 +7,17 @@
     "deploy": "wrangler deploy",
     "db:migrate:local": "wrangler d1 migrations apply kizashi-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply kizashi-db --remote",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "threads:verify-publish": "tsx scripts/verify-threads-publish.ts"
   },
   "dependencies": {
+    "hono": "^4",
     "kizashi-core": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5",
+    "@types/node": "^22",
+    "tsx": "^4",
     "typescript": "^5",
     "wrangler": "^4"
   }

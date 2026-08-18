@@ -1,9 +1,22 @@
-export interface Env {
-  DB: D1Database;
-}
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import type { Env } from "./env";
+import authRoutes from "./routes/auth";
+import threadsAccountsRoutes from "./routes/threadsAccounts";
 
-export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    return new Response("kizashi-api: ok", { status: 200 });
-  },
-};
+const app = new Hono<{ Bindings: Env }>();
+
+app.use("*", async (c, next) => {
+  const middleware = cors({
+    origin: c.env.FRONTEND_ORIGIN,
+    credentials: true,
+  });
+  return middleware(c, next);
+});
+
+app.get("/", (c) => c.text("kizashi-api: ok"));
+
+app.route("/auth", authRoutes);
+app.route("/threads-accounts", threadsAccountsRoutes);
+
+export default app;
