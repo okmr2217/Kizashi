@@ -36,45 +36,49 @@ export default async function DraftsPage({ searchParams }: DraftsPageProps) {
   const groupNameById = new Map(groups.map((g) => [g.id, g.name]));
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Draft一覧</h1>
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-8">
+      <div>
+        <h1 className="font-serif text-2xl font-bold text-ink">Draft一覧</h1>
+        <p className="mt-1 text-[13.5px] text-ink-soft">
+          AIが提案した投稿案（Draft）を一覧で管理します。手入力での作成・編集・評価ができます。
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <DraftFilters groups={groups} threadsAccounts={threadsAccounts} />
       </div>
 
       <NewDraftForm groups={groups} projects={projects} threadsAccounts={threadsAccounts} />
-      <DraftFilters groups={groups} threadsAccounts={threadsAccounts} />
 
       {drafts.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+        <p className="rounded-xl border border-dashed border-border bg-surface px-8 py-12 text-center text-[13.5px] text-muted">
           条件に一致するDraftがありません
         </p>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-2.5">
           {drafts.map((draft) => (
             <li key={draft.id}>
               <Link
                 href={`/drafts/${draft.id}`}
-                className="block rounded-lg border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600"
+                className="grid grid-cols-1 gap-2 rounded-xl border border-border bg-surface p-4 transition-colors hover:border-accent sm:grid-cols-[1fr_auto_auto_auto] sm:items-center sm:gap-4"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <StatusBadge status={draft.status} />
+                <div className="min-w-0">
+                  <p className="line-clamp-2 whitespace-pre-wrap text-[13.5px] text-ink">
+                    {draft.content}
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {draft.group_id && groupNameById.get(draft.group_id) && (
-                      <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                      <span className="rounded px-1.5 py-0.5 text-[11px] text-muted bg-surface-2">
                         {groupNameById.get(draft.group_id)}
                       </span>
                     )}
                   </div>
-                  <span className="text-xs text-zinc-400">
-                    {formatDateTime(draft.updated_at)}
-                  </span>
                 </div>
-                <p className="mt-2 line-clamp-2 whitespace-pre-wrap text-sm text-zinc-800 dark:text-zinc-200">
-                  {draft.content}
-                </p>
-                <div className="mt-2">
-                  <StarRating value={draft.rating} />
-                </div>
+                <StarRating value={draft.rating} size="sm" />
+                <StatusBadge status={draft.status} />
+                <span className="whitespace-nowrap font-mono text-xs text-muted">
+                  {draft.scheduled_at ? formatDateTime(draft.scheduled_at) : formatDateTime(draft.updated_at)}
+                </span>
               </Link>
             </li>
           ))}

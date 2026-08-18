@@ -1,17 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Kizashi",
@@ -20,24 +9,34 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="ja"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="flex min-h-full flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-        <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-3">
-            <Link href="/drafts" className="text-lg font-semibold">
+    <html lang="ja" className="h-full antialiased">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Shippori+Mincho:wght@500;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        />
+      </head>
+      <body className="flex min-h-full flex-col bg-paper text-ink">
+        <header className="border-b border-border bg-surface">
+          <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-6 py-3">
+            <Link href="/drafts" className="flex items-center gap-2.5 text-[15px] font-bold">
+              <span className="relative inline-block h-[22px] w-[22px] rounded-md bg-accent">
+                <span className="absolute inset-[6px] rounded-[2px] bg-paper" />
+              </span>
               Kizashi
             </Link>
-            <nav className="text-sm text-zinc-500 dark:text-zinc-400">
-              <Link href="/drafts" className="hover:text-zinc-900 dark:hover:text-zinc-100">
+            <nav className="text-sm">
+              <Link
+                href="/drafts"
+                className="border-b-2 border-accent pb-0.5 font-semibold text-ink"
+              >
                 Draft一覧
               </Link>
             </nav>
           </div>
         </header>
-        <main className="flex flex-1 flex-col">{children}</main>
+        <main className="flex flex-1 flex-col bg-paper-dim">{children}</main>
       </body>
     </html>
   );
