@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { api, ApiError, type Group, type Project, type ThreadsAccount } from "@/lib/api";
+import { api, ApiError, type Group, type Project } from "@/lib/api";
 
 const fieldSelectClass =
   "rounded-lg border border-kz-border bg-kz-paper-dim px-2.5 py-2 text-[13px] text-kz-ink-soft outline-none focus:border-kz-accent";
@@ -9,17 +9,14 @@ const fieldSelectClass =
 export function NewDraftForm({
   groups,
   projects,
-  threadsAccounts,
   onCreated,
 }: {
   groups: Group[];
   projects: Project[];
-  threadsAccounts: ThreadsAccount[];
   onCreated: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [content, setContent] = useState("");
-  const [accountId, setAccountId] = useState(threadsAccounts[0]?.id ?? "");
   const [groupId, setGroupId] = useState("");
   const [projectId, setProjectId] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -39,10 +36,6 @@ export function NewDraftForm({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!accountId) {
-      setError("Threadsアカウントを選択してください");
-      return;
-    }
     if (!content.trim()) {
       setError("本文を入力してください");
       return;
@@ -51,7 +44,6 @@ export function NewDraftForm({
     setError(null);
     try {
       await api.createDraft({
-        threads_account_id: accountId,
         group_id: groupId || null,
         project_id: projectId || null,
         content,
@@ -101,22 +93,6 @@ export function NewDraftForm({
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <label className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-kz-ink-soft">Threadsアカウント</span>
-          <select
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-            className={fieldSelectClass}
-          >
-            <option value="">選択してください</option>
-            {threadsAccounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.display_name ?? a.threads_user_id}
-              </option>
-            ))}
-          </select>
-        </label>
-
         <label className="flex flex-col gap-1">
           <span className="text-xs font-semibold text-kz-ink-soft">グループ</span>
           <select
