@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api, ApiError, type Group, type Project, type ThreadsAccount } from "@/lib/api";
 
@@ -11,12 +10,13 @@ export function NewDraftForm({
   groups,
   projects,
   threadsAccounts,
+  onCreated,
 }: {
   groups: Group[];
   projects: Project[];
   threadsAccounts: ThreadsAccount[];
+  onCreated: () => void;
 }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [content, setContent] = useState("");
   const [accountId, setAccountId] = useState(threadsAccounts[0]?.id ?? "");
@@ -60,7 +60,7 @@ export function NewDraftForm({
       setGroupId("");
       setProjectId("");
       setOpen(false);
-      router.refresh();
+      onCreated();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "作成に失敗しました");
     } finally {
