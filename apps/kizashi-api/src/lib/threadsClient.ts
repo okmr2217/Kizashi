@@ -91,14 +91,38 @@ export async function createThreadsTextContainer(params: {
   threadsUserId: string;
   accessToken: string;
   text: string;
+  replyToId?: string;
 }): Promise<{ id: string }> {
   const url = new URL(`${GRAPH_BASE}/${params.threadsUserId}/threads`);
   url.searchParams.set("media_type", "TEXT");
   url.searchParams.set("text", params.text);
+  if (params.replyToId) url.searchParams.set("reply_to_id", params.replyToId);
   url.searchParams.set("access_token", params.accessToken);
   const res = await fetch(url.toString(), { method: "POST" });
   if (!res.ok) throw new Error(`threads container creation failed: ${res.status} ${await res.text()}`);
   return res.json();
+}
+
+export interface ThreadsPublishingLimit {
+  quotaUsage: number;
+  quotaTotal: number;
+}
+
+// クォータ確認: 予約投稿実行ジョブが投稿前に24時間250投稿上限の残数を確認するために使う。
+// 参照: docs/Kizashi 要件定義書 v3.md 「6. Threads API連携の要点」
+export async function fetchPublishingLimit(params: {
+  threadsUserId: string;
+  accessToken: string;
+}): Promise<ThreadsPublishingLimit> {
+  const url = new URL(`${GRAPH_BASE}/${params.threadsUserId}/threads_publishing_limit`);
+  url.searchParams.set("fields", "quota_usage,config");
+  url.searchParams.set("access_token", params.accessToken);
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error(`threads publishing limit fetch failed: ${res.status} ${await res.text()}`);
+  const body = (await res.json()) as { data: Array<{ quota_usage: number; config: { quota_total: number } }> };
+  const entry = body.data[0];
+  if (!entry) throw new Error("threads publishing limit response missing data");
+  return { quotaUsage: entry.quota_usage, quotaTotal: entry.config.quota_total };
 }
 
 export async function publishThreadsContainer(params: {

@@ -4,6 +4,7 @@ import {
   createDraftInputSchema,
   updateDraftInputSchema,
   listDraftsQuerySchema,
+  scheduleDraftInputSchema,
   type Draft,
 } from "kizashi-core";
 import type { Env } from "../env";
@@ -105,6 +106,63 @@ drafts.patch("/:id", async (c) => {
      WHERE id = ? AND user_id = ?`
   )
     .bind(content, groupId, projectId, rating, status, now, id, userId)
+    .run();
+
+  const draft = await c.env.DB.prepare("SELECT * FROM drafts WHERE id = ?")
+    .bind(id)
+    .first<Draft>();
+  return c.json({ draft });
+});
+
+drafts.post("/:id/schedule", async (c) => {
+  const userId = c.get("userId");
+  const id = c.req.param("id");
+
+  const existing = await c.env.DB.prepare("SELECT * FROM drafts WHERE id = ? AND user_id = ?")
+    .bind(id, userId)
+    .first<Draft>();
+  if (!existing) return c.json({ error: "not_found" }, 404);
+
+  const parsed = scheduleDraftInputSchema.safeParse(await c.req.json());
+  if (!parsed.success) return c.json({ error: "validation_error", details: parsed.error.flatten() }, 400);
+  const { scheduled_at, parent_draft_id } = parsed.data;
+
+  let canPublishAfterParent = 1;
+  let status: Draft["status"] = "scheduled";
+
+  if (parent_draft_id) {
+    if (parent_draft_id === id) {
+      return c.json({ error: "validation_error", details: "parent_draft_id must not reference itself" }, 400);
+    }
+
+    const parent = await c.env.DB.prepare("SELECT * FROM drafts WHERE id = ? AND user_id = ?")
+      .bind(parent_draft_id, userId)
+      .first<Draft>();
+    if (!parent) return c.json({ error: "parent_draft_not_found" }, 400);
+    if (parent.threads_account_id !== existing.threads_account_id) {
+      return c.json({ error: "validation_error", details: "parent_draft_id must belong to the same threads account" }, 400);
+    }
+    if (parent.parent_draft_id === id) {
+      return c.json({ error: "validation_error", details: "parent_draft_id must not create a cycle" }, 400);
+    }
+
+    if (parent.status === "published" && parent.threads_post_id) {
+      canPublishAfterParent = 1;
+      status = "ready_to_publish";
+    } else {
+      canPublishAfterParent = 0;
+      status = "scheduled";
+    }
+  }
+
+  const now = new Date().toISOString();
+
+  await c.env.DB.prepare(
+    `UPDATE drafts SET status = ?, scheduled_at = ?, parent_draft_id = ?, can_publish_after_parent = ?,
+       failure_reason = NULL, published_at = NULL, threads_post_id = NULL, updated_at = ?
+     WHERE id = ? AND user_id = ?`
+  )
+    .bind(status, scheduled_at, parent_draft_id ?? null, canPublishAfterParent, now, id, userId)
     .run();
 
   const draft = await c.env.DB.prepare("SELECT * FROM drafts WHERE id = ?")

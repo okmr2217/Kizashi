@@ -16,10 +16,12 @@ export function DraftDetailForm({
   draft,
   groups,
   projects,
+  onChanged,
 }: {
   draft: Draft;
   groups: Group[];
   projects: Project[];
+  onChanged: () => void;
 }) {
   const router = useRouter();
   const [content, setContent] = useState(draft.content);
@@ -51,7 +53,7 @@ export function DraftDetailForm({
         rating,
       });
       setSavedAt(Date.now());
-      router.refresh();
+      onChanged();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "保存に失敗しました");
     } finally {
@@ -64,7 +66,7 @@ export function DraftDetailForm({
     setError(null);
     try {
       await api.updateDraft(draft.id, { rating: next });
-      router.refresh();
+      onChanged();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "評価の更新に失敗しました");
     }
@@ -77,7 +79,6 @@ export function DraftDetailForm({
     try {
       await api.deleteDraft(draft.id);
       router.push("/drafts");
-      router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "削除に失敗しました");
       setDeleting(false);
