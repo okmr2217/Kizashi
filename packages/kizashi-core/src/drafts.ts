@@ -51,6 +51,13 @@ export const updateDraftInputSchema = z.object({
 
 export type UpdateDraftInput = z.infer<typeof updateDraftInputSchema>;
 
+export const scheduleDraftInputSchema = z.object({
+  scheduled_at: z.string().refine((v) => !Number.isNaN(Date.parse(v)), "scheduled_at must be a valid ISO datetime"),
+  parent_draft_id: z.string().min(1).nullish(),
+});
+
+export type ScheduleDraftInput = z.infer<typeof scheduleDraftInputSchema>;
+
 export const listDraftsQuerySchema = z.object({
   account_id: z.string().min(1).optional(),
   group_id: z.string().min(1).optional(),
