@@ -1,16 +1,13 @@
+"use client";
+
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { api, ApiError } from "@/lib/api";
+import { useParams, useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { api, ApiError, type Draft, type EngagementSnapshot, type Group, type Project } from "@/lib/api";
 import { DraftDetailForm } from "@/components/draft-detail-form";
 import { StatusBadge } from "@/components/status-badge";
 import { EngagementChart } from "@/components/engagement-chart";
 import { formatDateTime } from "@/lib/format";
-
-export const dynamic = "force-dynamic";
-
-interface DraftDetailPageProps {
-  params: Promise<{ id: string }>;
-}
 
 const STAT_LABELS: Record<string, string> = {
   views: "インプレッション",
@@ -20,28 +17,79 @@ const STAT_LABELS: Record<string, string> = {
   quotes: "引用",
 };
 
-export default async function DraftDetailPage({ params }: DraftDetailPageProps) {
-  const { id } = await params;
+interface DraftDetailData {
+  draft: Draft;
+  snapshots: EngagementSnapshot[];
+  groups: Group[];
+  projects: Project[];
+}
 
-  let data;
-  try {
-    const [draftResult, { groups }, { projects }] = await Promise.all([
-      api.getDraft(id),
-      api.listGroups(),
-      api.listProjects(),
-    ]);
-    data = { ...draftResult, groups, projects };
-  } catch (err) {
-    if (err instanceof ApiError && err.status === 404) {
-      notFound();
+export default function DraftDetailPage() {
+  const router = useRouter();
+  const params = useParams<{ id: string }>();
+  const id = params.id;
+
+  const [data, setData] = useState<DraftDetailData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [draftResult, { groups }, { projects }] = await Promise.all([
+        api.getDraft(id),
+        api.listGroups(),
+        api.listProjects(),
+      ]);
+      setData({
+        draft: draftResult.draft,
+        snapshots: draftResult.engagement_snapshots,
+        groups,
+        projects,
+      });
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        router.replace("/login");
+        return;
+      }
+      if (err instanceof ApiError && err.status === 404) {
+        setError("Draftが見つかりませんでした");
+        return;
+      }
+      setError("読み込みに失敗しました");
+    } finally {
+      setLoading(false);
     }
-    if (err instanceof ApiError && err.status === 401) {
-      redirect("/login");
-    }
-    throw err;
+  }, [id, router]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch on mount/id change
+    load();
+  }, [load]);
+
+  if (loading && !data) {
+    return (
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-6 py-8">
+        <p className="text-[13.5px] text-kz-muted">読み込み中...</p>
+      </div>
+    );
   }
 
-  const { draft, engagement_snapshots: snapshots, groups, projects } = data;
+  if (error || !data) {
+    return (
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-6 py-8">
+        <Link href="/drafts" className="text-sm text-kz-muted hover:text-kz-ink">
+          ← Draft一覧に戻る
+        </Link>
+        <p className="rounded-lg border border-kz-red bg-kz-red-soft px-3 py-2 text-[13px] text-kz-red">
+          {error ?? "読み込みに失敗しました"}
+        </p>
+      </div>
+    );
+  }
+
+  const { draft, snapshots, groups, projects } = data;
   const latest = [...snapshots].sort((a, b) => (a.fetched_at < b.fetched_at ? 1 : -1))[0];
 
   return (
@@ -59,7 +107,7 @@ export default async function DraftDetailPage({ params }: DraftDetailPageProps) 
         </p>
       </div>
 
-      <DraftDetailForm draft={draft} groups={groups} projects={projects} />
+      <DraftDetailForm draft={draft} groups={groups} projects={projects} onChanged={load} />
 
       <div className="rounded-xl border border-kz-border bg-kz-surface p-4">
         <h4 className="mb-3 text-[12.5px] font-semibold uppercase tracking-wide text-kz-muted">
