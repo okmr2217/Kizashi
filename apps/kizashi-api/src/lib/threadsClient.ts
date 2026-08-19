@@ -125,6 +125,46 @@ export async function fetchPublishingLimit(params: {
   return { quotaUsage: entry.quota_usage, quotaTotal: entry.config.quota_total };
 }
 
+export interface ThreadsMediaInsightsMetrics {
+  views: number | null;
+  likes: number | null;
+  replies: number | null;
+  reposts: number | null;
+  quotes: number | null;
+}
+
+const INSIGHTS_METRICS = ["views", "likes", "replies", "reposts", "quotes"] as const;
+
+// 実測エンゲージメント取得: threads_manage_insightsスコープが必要。
+// 参照: docs/Kizashi 設計書 v1.md 「2. 実測エンゲージメントデータ設計」
+export async function fetchThreadsMediaInsights(params: {
+  mediaId: string;
+  accessToken: string;
+}): Promise<ThreadsMediaInsightsMetrics> {
+  const url = new URL(`${GRAPH_BASE}/${params.mediaId}/insights`);
+  url.searchParams.set("metric", INSIGHTS_METRICS.join(","));
+  url.searchParams.set("access_token", params.accessToken);
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error(`threads media insights fetch failed: ${res.status} ${await res.text()}`);
+  const body = (await res.json()) as {
+    data: Array<{ name: string; values?: Array<{ value: number }>; total_value?: { value: number } }>;
+  };
+
+  const metrics: ThreadsMediaInsightsMetrics = {
+    views: null,
+    likes: null,
+    replies: null,
+    reposts: null,
+    quotes: null,
+  };
+  for (const entry of body.data) {
+    if (!(entry.name in metrics)) continue;
+    const value = entry.total_value?.value ?? entry.values?.[0]?.value ?? null;
+    (metrics as unknown as Record<string, number | null>)[entry.name] = value;
+  }
+  return metrics;
+}
+
 export async function publishThreadsContainer(params: {
   threadsUserId: string;
   accessToken: string;
