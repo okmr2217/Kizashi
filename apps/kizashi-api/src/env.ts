@@ -10,4 +10,8 @@ export interface Env {
   THREADS_REDIRECT_URI: string;
   // CORS許可オリジン（kizashi-webのURL）
   FRONTEND_ORIGIN: string;
+  // 内部AI生成（POST /drafts/generate）用のAnthropic APIキー
+  ANTHROPIC_API_KEY: string;
+  // 内部AI生成で使うモデルID（未設定時はkizashi-core側のデフォルトを使用）
+  ANTHROPIC_MODEL?: string;
 }

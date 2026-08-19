@@ -5,6 +5,10 @@ import {
   updateDraftInputSchema,
   listDraftsQuerySchema,
   scheduleDraftInputSchema,
+  generateDraftInputSchema,
+  createDraftGenerationJob,
+  getDraftGenerationJob,
+  runDraftGeneration,
   type Draft,
 } from "kizashi-core";
 import type { Env } from "../env";
@@ -15,6 +19,61 @@ type Variables = { userId: string };
 const drafts = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 drafts.use("*", requireAuth);
+
+drafts.post("/generate", async (c) => {
+  const userId = c.get("userId");
+  const parsed = generateDraftInputSchema.safeParse(await c.req.json());
+  if (!parsed.success) return c.json({ error: "validation_error", details: parsed.error.flatten() }, 400);
+  const input = parsed.data;
+
+  const account = await c.env.DB.prepare("SELECT id FROM threads_accounts WHERE id = ? AND user_id = ?")
+    .bind(input.threads_account_id, userId)
+    .first();
+  if (!account) return c.json({ error: "threads_account_not_found" }, 400);
+
+  if (input.group_id) {
+    const group = await c.env.DB.prepare("SELECT id FROM groups WHERE id = ? AND user_id = ?")
+      .bind(input.group_id, userId)
+      .first();
+    if (!group) return c.json({ error: "group_not_found" }, 400);
+  }
+
+  if (input.project_id) {
+    const project = await c.env.DB.prepare("SELECT id FROM projects WHERE id = ? AND user_id = ?")
+      .bind(input.project_id, userId)
+      .first();
+    if (!project) return c.json({ error: "project_not_found" }, 400);
+  }
+
+  const job = await createDraftGenerationJob(c.env.DB, userId, input);
+
+  c.executionCtx.waitUntil(
+    runDraftGeneration(
+      { db: c.env.DB, anthropicApiKey: c.env.ANTHROPIC_API_KEY, anthropicModel: c.env.ANTHROPIC_MODEL },
+      job.id,
+      userId,
+      input
+    )
+  );
+
+  return c.json({ job_id: job.id, status: job.status }, 202);
+});
+
+drafts.get("/generate/:jobId", async (c) => {
+  const userId = c.get("userId");
+  const jobId = c.req.param("jobId");
+
+  const job = await getDraftGenerationJob(c.env.DB, userId, jobId);
+  if (!job) return c.json({ error: "not_found" }, 404);
+
+  return c.json({
+    job_id: job.id,
+    status: job.status,
+    progress_message: job.progress_message,
+    draft_id: job.draft_id,
+    error_message: job.error_message,
+  });
+});
 
 drafts.get("/", async (c) => {
   const userId = c.get("userId");

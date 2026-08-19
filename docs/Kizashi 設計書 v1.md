@@ -124,6 +124,26 @@ CREATE TABLE draft_engagement_snapshots (
 );
 ```
 
+### draft_generation_jobs
+```sql
+CREATE TABLE draft_generation_jobs (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  threads_account_id TEXT NOT NULL REFERENCES threads_accounts(id),
+  group_id TEXT REFERENCES groups(id),
+  project_id TEXT REFERENCES projects(id),
+  prompt TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'processing',
+    -- 'processing' | 'completed' | 'failed'
+  progress_message TEXT,
+  draft_id TEXT REFERENCES drafts(id),
+  error_message TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+```
+`POST /drafts/generate` が作成する非同期生成ジョブの状態。Cloudflare Workersには常駐プロセスがないため、リクエストハンドラ内で `ctx.waitUntil()` により生成処理を継続実行しつつ、進捗をこのテーブルに書き込む。`GET /drafts/generate/:jobId` はこの行をポーリングして返す（8章参照）。
+
 ### api_keys
 ```sql
 CREATE TABLE api_keys (
