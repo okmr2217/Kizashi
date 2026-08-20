@@ -26,11 +26,6 @@ drafts.post("/generate", async (c) => {
   if (!parsed.success) return c.json({ error: "validation_error", details: parsed.error.flatten() }, 400);
   const input = parsed.data;
 
-  const account = await c.env.DB.prepare("SELECT id FROM threads_accounts WHERE id = ? AND user_id = ?")
-    .bind(input.threads_account_id, userId)
-    .first();
-  if (!account) return c.json({ error: "threads_account_not_found" }, 400);
-
   if (input.group_id) {
     const group = await c.env.DB.prepare("SELECT id FROM groups WHERE id = ? AND user_id = ?")
       .bind(input.group_id, userId)
@@ -184,7 +179,12 @@ drafts.post("/:id/schedule", async (c) => {
 
   const parsed = scheduleDraftInputSchema.safeParse(await c.req.json());
   if (!parsed.success) return c.json({ error: "validation_error", details: parsed.error.flatten() }, 400);
-  const { scheduled_at, parent_draft_id } = parsed.data;
+  const { threads_account_id, scheduled_at, parent_draft_id } = parsed.data;
+
+  const account = await c.env.DB.prepare("SELECT id FROM threads_accounts WHERE id = ? AND user_id = ?")
+    .bind(threads_account_id, userId)
+    .first();
+  if (!account) return c.json({ error: "threads_account_not_found" }, 400);
 
   let canPublishAfterParent = 1;
   let status: Draft["status"] = "scheduled";
@@ -198,7 +198,7 @@ drafts.post("/:id/schedule", async (c) => {
       .bind(parent_draft_id, userId)
       .first<Draft>();
     if (!parent) return c.json({ error: "parent_draft_not_found" }, 400);
-    if (parent.threads_account_id !== existing.threads_account_id) {
+    if (parent.threads_account_id !== threads_account_id) {
       return c.json({ error: "validation_error", details: "parent_draft_id must belong to the same threads account" }, 400);
     }
     if (parent.parent_draft_id === id) {
@@ -217,11 +217,11 @@ drafts.post("/:id/schedule", async (c) => {
   const now = new Date().toISOString();
 
   await c.env.DB.prepare(
-    `UPDATE drafts SET status = ?, scheduled_at = ?, parent_draft_id = ?, can_publish_after_parent = ?,
+    `UPDATE drafts SET status = ?, threads_account_id = ?, scheduled_at = ?, parent_draft_id = ?, can_publish_after_parent = ?,
        failure_reason = NULL, published_at = NULL, threads_post_id = NULL, updated_at = ?
      WHERE id = ? AND user_id = ?`
   )
-    .bind(status, scheduled_at, parent_draft_id ?? null, canPublishAfterParent, now, id, userId)
+    .bind(status, threads_account_id, scheduled_at, parent_draft_id ?? null, canPublishAfterParent, now, id, userId)
     .run();
 
   const draft = await c.env.DB.prepare("SELECT * FROM drafts WHERE id = ?")

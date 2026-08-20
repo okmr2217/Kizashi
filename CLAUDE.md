@@ -60,8 +60,8 @@ kizashi/
 - [x] Phase 0: 基盤構築
 - [x] Phase 1: Threads連携の疎通確認（独自認証(signup/login/セッションCookie)とThreads OAuth連携（`/threads-accounts/oauth/start` `/callback`）を実装、ローカル/リモートでの疎通確認・実投稿まで完了。ログイン画面のUIは未着手）
 - [x] Phase 2: Draft管理の最小機能（groups/projects/project_filesのCRUD、drafts手動作成・編集・削除・評価・一覧フィルタAPI（すべて`requireAuth`によるセッション認証必須）、Draft一覧/詳細画面まで実装。AI生成・予約投稿は未実装）
-- [x] Phase 3: 予約投稿の自動実行（`POST /drafts/:id/schedule`、Cron 3種（予約投稿実行ジョブ／親投稿完了検知ジョブ＝セーフティネット／トークンリフレッシュジョブ）を実装。親子リプライの順序制御はイベント駆動：予約投稿実行ジョブが親の投稿成功/失敗を確定した直後にそのジョブ内で直下の子の状態を更新し、親投稿完了検知ジョブはその更新漏れを拾う整合性チェックとして数分おきに再確認する構成。`drafts.status`は既存5値のまま変更なし。`POST /drafts/:id/cancel-schedule`とリプライ側1000件/日上限のガードは未実装）
-- [ ] Phase 4: 実測エンゲージメント取得
+- [x] Phase 3: 予約投稿の自動実行（`POST /drafts/:id/schedule`、Cron 3種（予約投稿実行ジョブ／親投稿完了検知ジョブ＝セーフティネット／トークンリフレッシュジョブ）を実装。親子リプライの順序制御はイベント駆動：予約投稿実行ジョブが親の投稿成功/失敗を確定した直後にそのジョブ内で直下の子の状態を更新し、親投稿完了検知ジョブはその更新漏れを拾う整合性チェックとして数分おきに再確認する構成。`drafts.status`は既存5値のまま変更なし。`POST /drafts/:id/cancel-schedule`とリプライ側1000件/日上限のガードは未実装。仕様変更：Draftは作成時にThreadsアカウントへ紐付けない方針とし、`threads_account_id`は`POST /drafts/:id/schedule`のリクエストボディで指定する必須項目に移動（`drafts.threads_account_id`はDB上NULL許容に変更、マイグレーション`0003_drafts_threads_account_nullable.sql`）。Draft新規作成フォームからThreadsアカウント選択UIは削除済み。予約設定自体のフロントUIはまだ未実装）
+- [x] Phase 4: 実測エンゲージメント取得（`draft_engagement_snapshots`への書き込みは`kizashi-core`の`saveEngagementSnapshot`に集約（UNIQUE(draft_id, snapshot_stage)によるupsert）。Cronジョブ`fetchEngagementSnapshotsJob`（15分毎）が投稿後1h/24h/72h/7dの到達タイミングを判定し`threads_manage_insights`（`fetchThreadsMediaInsights`）を取得、失敗時はジョブ内で3回までリトライしそれでも失敗したら`fetch_failed`を立てて記録（現状は通知UI/メール等の外部通知基盤が無いため、予約投稿失敗時の`failure_reason`と同じ方針でDBフラグとして永続化しDraft詳細等から気づける形にする）。7日後スナップショットは「確定値」であることを`CONFIRMED_ENGAGEMENT_SNAPSHOT_STAGE`定数として明示し、一度取得（または3回リトライ失敗）したステージは再取得しない。`GET /groups/:id/stats`（`getGroupEngagementStats`）でグループ単位の評価分布・平均値を返す。平均インプレッション等は「確定値」（7dスナップショットかつfetch_failed=0）のみを母数にする設計）
 - [ ] Phase 5: AI生成（内部）
 - [ ] Phase 6: MCP公開・APIキー管理
 - [ ] Phase 7: 複数アカウントUI仕上げ（`docs/design-ui.md`のデザイントークンをshadcn/uiテーマへ正式統合する作業を含む）

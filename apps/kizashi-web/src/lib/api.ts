@@ -11,7 +11,7 @@ export type DraftStatus =
 export interface Draft {
   id: string;
   user_id: string;
-  threads_account_id: string;
+  threads_account_id: string | null;
   group_id: string | null;
   project_id: string | null;
   parent_draft_id: string | null;
@@ -158,7 +158,6 @@ export const api = {
   getDraft: (id: string) =>
     request<{ draft: Draft; engagement_snapshots: EngagementSnapshot[] }>(`/drafts/${id}`),
   createDraft: (input: {
-    threads_account_id: string;
     group_id?: string | null;
     project_id?: string | null;
     content: string;

@@ -11,7 +11,6 @@ export type DraftGenerationJobStatus = (typeof DRAFT_GENERATION_JOB_STATUSES)[nu
 export interface DraftGenerationJob {
   id: string;
   user_id: string;
-  threads_account_id: string;
   group_id: string | null;
   project_id: string | null;
   prompt: string;
@@ -24,7 +23,6 @@ export interface DraftGenerationJob {
 }
 
 export const generateDraftInputSchema = z.object({
-  threads_account_id: z.string().min(1),
   group_id: z.string().min(1).nullish(),
   project_id: z.string().min(1).nullish(),
   prompt: z.string().min(1, "prompt is required"),
@@ -47,14 +45,13 @@ export async function createDraftGenerationJob(
   await db
     .prepare(
       `INSERT INTO draft_generation_jobs (
-        id, user_id, threads_account_id, group_id, project_id, prompt,
+        id, user_id, group_id, project_id, prompt,
         status, progress_message, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, 'processing', ?, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, 'processing', ?, ?, ?)`
     )
     .bind(
       id,
       userId,
-      input.threads_account_id,
       input.group_id ?? null,
       input.project_id ?? null,
       input.prompt,
@@ -324,7 +321,6 @@ export async function runDraftGeneration(
     });
 
     const draft = await createDraft(db, userId, {
-      threads_account_id: input.threads_account_id,
       group_id: input.group_id ?? null,
       project_id: input.project_id ?? null,
       content,
