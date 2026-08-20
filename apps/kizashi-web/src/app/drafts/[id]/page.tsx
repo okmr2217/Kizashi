@@ -3,10 +3,19 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { api, ApiError, type Draft, type EngagementSnapshot, type Group, type Project } from "@/lib/api";
+import {
+  api,
+  ApiError,
+  type Draft,
+  type EngagementSnapshot,
+  type Group,
+  type Project,
+  type ThreadsAccount,
+} from "@/lib/api";
 import { DraftDetailForm } from "@/components/draft-detail-form";
 import { StatusBadge } from "@/components/status-badge";
 import { EngagementChart } from "@/components/engagement-chart";
+import { ScheduleSection } from "@/components/schedule-section";
 import { formatDateTime } from "@/lib/format";
 
 const STAT_LABELS: Record<string, string> = {
@@ -22,6 +31,8 @@ interface DraftDetailData {
   snapshots: EngagementSnapshot[];
   groups: Group[];
   projects: Project[];
+  threadsAccounts: ThreadsAccount[];
+  drafts: Draft[];
 }
 
 export default function DraftDetailPage() {
@@ -37,16 +48,20 @@ export default function DraftDetailPage() {
     setLoading(true);
     setError(null);
     try {
-      const [draftResult, { groups }, { projects }] = await Promise.all([
+      const [draftResult, { groups }, { projects }, { accounts }, { drafts }] = await Promise.all([
         api.getDraft(id),
         api.listGroups(),
         api.listProjects(),
+        api.listThreadsAccounts(),
+        api.listDrafts(),
       ]);
       setData({
         draft: draftResult.draft,
         snapshots: draftResult.engagement_snapshots,
         groups,
         projects,
+        threadsAccounts: accounts,
+        drafts,
       });
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
@@ -89,7 +104,7 @@ export default function DraftDetailPage() {
     );
   }
 
-  const { draft, snapshots, groups, projects } = data;
+  const { draft, snapshots, groups, projects, threadsAccounts, drafts } = data;
   const latest = [...snapshots].sort((a, b) => (a.fetched_at < b.fetched_at ? 1 : -1))[0];
 
   return (
@@ -108,6 +123,8 @@ export default function DraftDetailPage() {
       </div>
 
       <DraftDetailForm draft={draft} groups={groups} projects={projects} onChanged={load} />
+
+      <ScheduleSection draft={draft} threadsAccounts={threadsAccounts} drafts={drafts} onChanged={load} />
 
       <div className="rounded-xl border border-kz-border bg-kz-surface p-4">
         <h4 className="mb-3 text-[12.5px] font-semibold uppercase tracking-wide text-kz-muted">
