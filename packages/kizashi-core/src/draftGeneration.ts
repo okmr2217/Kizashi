@@ -251,7 +251,14 @@ function buildUserMessage(params: GenerateDraftContentParams): string {
   return sections.join("\n\n");
 }
 
-export async function generateDraftContent(params: GenerateDraftContentParams): Promise<string> {
+const AI_MEMO_SEPARATOR = "---AI_MEMO---";
+
+export interface GeneratedDraftContent {
+  content: string;
+  aiMemo: string | null;
+}
+
+export async function generateDraftContent(params: GenerateDraftContentParams): Promise<GeneratedDraftContent> {
   const client = new Anthropic({ apiKey: params.apiKey });
 
   const response = await client.messages.create({
@@ -260,7 +267,9 @@ export async function generateDraftContent(params: GenerateDraftContentParams): 
     system:
       "あなたはThreadsアカウント運用担当者向けの投稿文生成アシスタントです。" +
       "与えられた良い例・避けるべき例・参照ファイル・実績サマリーを踏まえ、指示に沿ったThreads投稿本文を1件だけ生成してください。" +
-      "出力はThreadsにそのまま投稿できる本文のみとし、前置き・説明・引用符・Markdownのコードブロックは一切含めないでください。",
+      "出力は投稿本文のみとし、前置き・説明・引用符・Markdownのコードブロックは一切含めないでください。" +
+      `続けて、生成理由・狙い・参考にした過去Draft等をユーザー向けに書き残したい場合は、本文の直後に区切り行 "${AI_MEMO_SEPARATOR}" を1行だけ置き、` +
+      "その後にメモを書いてください（不要なら区切り行・メモとも書かないでください）。",
     messages: [{ role: "user", content: buildUserMessage(params) }],
   });
 
@@ -273,11 +282,13 @@ export async function generateDraftContent(params: GenerateDraftContentParams): 
     throw new Error("LLM did not return text content");
   }
 
-  const content = textBlock.text.trim();
+  const [rawContent, rawAiMemo] = textBlock.text.split(AI_MEMO_SEPARATOR);
+  const content = rawContent.trim();
   if (!content) {
     throw new Error("LLM returned empty content");
   }
-  return content;
+  const aiMemo = rawAiMemo?.trim() || null;
+  return { content, aiMemo };
 }
 
 export interface DraftGenerationDeps {
@@ -311,7 +322,7 @@ export async function runDraftGeneration(
     const groupStats = await fetchGroupStats(db, userId, input.group_id ?? null);
 
     await updateJobProgress(db, jobId, "AIが生成中");
-    const content = await generateDraftContent({
+    const { content, aiMemo } = await generateDraftContent({
       apiKey: anthropicApiKey,
       model: anthropicModel,
       prompt: input.prompt,
@@ -324,6 +335,7 @@ export async function runDraftGeneration(
       group_id: input.group_id ?? null,
       project_id: input.project_id ?? null,
       content,
+      ai_memo: aiMemo,
     });
 
     await completeJob(db, jobId, draft.id);
