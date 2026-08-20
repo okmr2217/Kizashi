@@ -104,6 +104,11 @@ CREATE TABLE drafts (
   published_at TEXT,
   threads_post_id TEXT,
   failure_reason TEXT,
+  memo TEXT,
+    -- 人間が書く自由記述メモ（任意）。ユーザーが編集する運用メモ
+  ai_memo TEXT,
+    -- AIが書く自由記述メモ（任意）。POST /drafts/generate でAIが生成理由・狙い・
+    -- 参考にした過去Draft等を書き込む想定だが必須ではない。ユーザーも編集可能
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -203,8 +208,8 @@ CREATE TABLE api_keys (
 |---|---|---|
 | GET | `/drafts` | 一覧（account_id/group_id/status/rating_min等でフィルタ） |
 | POST | `/drafts` | 手動作成（Threadsアカウントには紐付けない） |
-| GET | `/drafts/:id` | 詳細（評価・実測実績含む） |
-| PATCH | `/drafts/:id` | 編集・評価更新 |
+| GET | `/drafts/:id` | 詳細（評価・実測実績・memo・ai_memo含む） |
+| PATCH | `/drafts/:id` | 編集・評価更新・memo/ai_memo編集 |
 | DELETE | `/drafts/:id` | 削除 |
 | POST | `/drafts/generate` | AI生成リクエスト（非同期・エージェント的フロー） |
 | GET | `/drafts/generate/:jobId` | 生成ジョブのステータス確認（ポーリング用） |
@@ -231,12 +236,12 @@ CREATE TABLE api_keys (
 
 | ツール名 | 概要 | 必要スコープ |
 |---|---|---|
-| `list_drafts` | 条件フィルタ済みDraft一覧（軽量版） | `drafts:read` |
-| `get_draft` | Draft詳細（本文・評価・全スナップショット） | `drafts:read` |
+| `list_drafts` | 条件フィルタ済みDraft一覧（軽量版、memo・ai_memo含む） | `drafts:read` |
+| `get_draft` | Draft詳細（本文・評価・memo・ai_memo・全スナップショット） | `drafts:read` |
 | `get_group_stats` | グループ単位の実績サマリー | `drafts:read` |
 | `list_projects` | プロジェクト一覧＋参照ファイルタイトル一覧 | `projects:read` |
 | `get_project_file` | 参照ファイルのMarkdown本文取得 | `projects:read` |
-| `create_draft` | Draft新規作成（書き込み系） | `drafts:write` |
+| `create_draft` | Draft新規作成（書き込み系。`ai_memo`を任意で書き込み可能） | `drafts:write` |
 
 ### トランスポート・認証
 - `POST /mcp`（ステートレスなStreamable HTTP。セッションを張らずリクエストごとにJSON-RPCレスポンスを1件返す）
@@ -253,7 +258,7 @@ CREATE TABLE api_keys (
 ### 内部AI生成（`/drafts/generate`）のフロー
 1. ユーザーがプロンプト・アカウント・グループ・プロジェクトを指定
 2. 内部AIが `list_drafts`（同グループの高評価/低評価Draft）・`get_project_file`（参照ファイル）・`get_group_stats`（実績サマリー）でコンテキスト収集
-3. `create_draft` で生成結果を保存
+3. `create_draft` で生成結果を保存（生成理由・狙い等を`ai_memo`として一緒に書き込む場合があるが任意。ユーザーは事後に編集可能）
 4. 外部のClaude/ChatGPTが同じMCPツールセットを使う場合も同一の生成品質になる設計
 
 ## 6. APIキー発行方針

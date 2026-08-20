@@ -23,6 +23,8 @@ export interface Draft {
   published_at: string | null;
   threads_post_id: string | null;
   failure_reason: string | null;
+  memo: string | null;
+  ai_memo: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -219,6 +221,8 @@ export const api = {
       project_id: string | null;
       rating: number | null;
       status: DraftStatus;
+      memo: string | null;
+      ai_memo: string | null;
     }>
   ) =>
     request<{ draft: Draft }>(`/drafts/${id}`, {
