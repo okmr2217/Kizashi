@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Suspense } from "react";
+import { AccountSwitcher } from "@/components/account-switcher";
 import { LogoutButton } from "@/components/logout-button";
 
 export function HeaderNav() {
@@ -16,6 +18,12 @@ export function HeaderNav() {
       >
         Draft一覧
       </Link>
+      <Link href="/onboarding" className="text-kz-muted hover:text-kz-ink">
+        アカウント連携
+      </Link>
+      <Suspense fallback={null}>
+        <AccountSwitcher />
+      </Suspense>
       <LogoutButton />
     </nav>
   );

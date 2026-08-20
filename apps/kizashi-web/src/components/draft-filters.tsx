@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import type { Group, ThreadsAccount } from "@/lib/api";
+import type { Group } from "@/lib/api";
 import { STATUS_LABELS } from "@/lib/format";
 
 const STATUS_OPTIONS = Object.keys(STATUS_LABELS);
@@ -10,54 +10,38 @@ const STATUS_OPTIONS = Object.keys(STATUS_LABELS);
 const selectClass =
   "rounded-full border border-kz-border bg-kz-surface px-3 py-1.5 text-[12.5px] text-kz-ink-soft outline-none focus:border-kz-accent";
 
-export function DraftFilters({
-  groups,
-  threadsAccounts,
-}: {
-  groups: Group[];
-  threadsAccounts: ThreadsAccount[];
-}) {
+export function DraftFilters({ groups }: { groups: Group[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [accountId, setAccountId] = useState(searchParams.get("account_id") ?? "");
   const [groupId, setGroupId] = useState(searchParams.get("group_id") ?? "");
   const [status, setStatus] = useState(searchParams.get("status") ?? "");
   const [ratingMin, setRatingMin] = useState(searchParams.get("rating_min") ?? "");
 
   function apply() {
-    const params = new URLSearchParams();
-    if (accountId) params.set("account_id", accountId);
+    // アカウントによる絞り込みはヘッダーのアカウントスイッチャーが管理するため、
+    // 既存のaccount_idクエリはここでは変更せず引き継ぐ
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("group_id");
+    params.delete("status");
+    params.delete("rating_min");
     if (groupId) params.set("group_id", groupId);
     if (status) params.set("status", status);
     if (ratingMin) params.set("rating_min", ratingMin);
-    router.push(`/drafts?${params.toString()}`);
+    const qs = params.toString();
+    router.push(`/drafts${qs ? `?${qs}` : ""}`);
   }
 
   function reset() {
-    setAccountId("");
     setGroupId("");
     setStatus("");
     setRatingMin("");
-    router.push("/drafts");
+    const accountId = searchParams.get("account_id");
+    router.push(accountId ? `/drafts?account_id=${accountId}` : "/drafts");
   }
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <select
-        className={selectClass}
-        value={accountId}
-        onChange={(e) => setAccountId(e.target.value)}
-        aria-label="アカウント"
-      >
-        <option value="">アカウント: すべて</option>
-        {threadsAccounts.map((a) => (
-          <option key={a.id} value={a.id}>
-            {a.display_name ?? a.threads_user_id}
-          </option>
-        ))}
-      </select>
-
       <select
         className={selectClass}
         value={groupId}

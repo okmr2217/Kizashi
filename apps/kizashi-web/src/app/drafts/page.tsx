@@ -120,8 +120,18 @@ function DraftsPageInner() {
         </p>
       </div>
 
+      {threadsAccounts.length === 0 && (
+        <p className="rounded-xl border border-dashed border-kz-border bg-kz-surface px-4 py-3 text-[13px] text-kz-ink-soft">
+          Threadsアカウントがまだ連携されていません。予約投稿を行うには
+          <Link href="/onboarding" className="mx-1 font-semibold text-kz-accent hover:underline">
+            アカウント連携
+          </Link>
+          を行ってください。
+        </p>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <DraftFilters groups={groups} threadsAccounts={threadsAccounts} />
+        <DraftFilters groups={groups} />
       </div>
 
       <NewDraftForm groups={groups} projects={projects} onCreated={load} />

@@ -26,10 +26,11 @@ export default function LoginPage() {
           return;
         }
         await api.signup({ email, password });
+        router.push("/onboarding");
       } else {
         await api.login({ email, password });
+        router.push("/drafts");
       }
-      router.push("/drafts");
       router.refresh();
     } catch (err) {
       if (err instanceof ApiError) {
