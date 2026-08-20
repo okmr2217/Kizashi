@@ -258,7 +258,7 @@ export async function generateDraftContent(params: GenerateDraftContentParams): 
   const client = new Anthropic({ apiKey: params.apiKey });
 
   const response = await client.messages.create({
-    model: params.model ?? DEFAULT_ANTHROPIC_MODEL,
+    model: params.model || DEFAULT_ANTHROPIC_MODEL,
     max_tokens: 2048,
     system:
       "あなたはThreadsアカウント運用担当者向けの投稿文生成アシスタントです。" +
