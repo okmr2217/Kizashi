@@ -18,6 +18,15 @@ export function HeaderNav() {
       >
         Draft一覧
       </Link>
+      <Link href="/groups" className="text-kz-muted hover:text-kz-ink">
+        グループ
+      </Link>
+      <Link href="/projects" className="text-kz-muted hover:text-kz-ink">
+        プロジェクト
+      </Link>
+      <Link href="/api-keys" className="text-kz-muted hover:text-kz-ink">
+        APIキー
+      </Link>
       <Link href="/onboarding" className="text-kz-muted hover:text-kz-ink">
         アカウント連携
       </Link>

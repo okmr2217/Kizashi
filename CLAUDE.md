@@ -6,6 +6,7 @@ Threads投稿のAI生成・リスト管理・予約投稿ツール「Kizashi」�
 - 要件定義書: `docs/Kizashi 要件定義書 v3.md`
 - 設計書: `docs/Kizashi 設計書 v1.md`
 - UI／UXデザイン方針・デザイントークン: `docs/design-ui.md`
+- GitHub Actions（CI/CDワークフローの内容）: `docs/github-actions.md`
 
 実装方針で迷ったら、まずこれらを参照すること。仕様の齟齬に気づいた場合はコードを推測で進めず確認する。
 
