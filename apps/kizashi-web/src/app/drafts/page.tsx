@@ -124,12 +124,7 @@ function DraftsPageInner() {
         <DraftFilters groups={groups} threadsAccounts={threadsAccounts} />
       </div>
 
-      <NewDraftForm
-        groups={groups}
-        projects={projects}
-        threadsAccounts={threadsAccounts}
-        onCreated={load}
-      />
+      <NewDraftForm groups={groups} projects={projects} onCreated={load} />
 
       {drafts.length === 0 ? (
         <p className="rounded-xl border border-dashed border-kz-border bg-kz-surface px-8 py-12 text-center text-[13.5px] text-kz-muted">

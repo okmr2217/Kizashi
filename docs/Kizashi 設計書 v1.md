@@ -5,9 +5,10 @@
 
 ## 1. 複数Threadsアカウント対応（UI設計）
 
-- Draftは**生成時にThreadsアカウントに紐付ける**（案A採用）
+- Draftは**Threadsアカウントに紐付けない**。生成・手動作成の時点ではアカウント非依存で、グループ・プロジェクトと同様にアカウント横断で自由に使い回せる
+- Threadsアカウントとの紐付けは**予約設定時（`POST /drafts/:id/schedule`）にのみ発生する**。予約するアカウントを選んで初めて `drafts.threads_account_id` が確定し、以降の投稿・実測エンゲージメント取得はそのアカウントの認可情報を使う
 - グループ・プロジェクトはアカウントに紐付けない。アカウント横断で自由に使い回せる設計とし、運用管理はユーザーに委ねる
-- ヘッダーにアカウントスイッチャー（ドロップダウン）を配置し、選択中アカウントでDraft一覧・生成をフィルタ
+- ヘッダーにアカウントスイッチャー（ドロップダウン）を配置し、選択中アカウントでDraft一覧をフィルタ（一覧フィルタ用途であり、生成・作成のスコープ制御ではない）
 - 全アカウント横断のDraft一覧ビュー（フィルタ「すべて」）も用意する
 
 ## 2. 実測エンゲージメントデータ設計
@@ -89,7 +90,8 @@ CREATE TABLE project_files (
 CREATE TABLE drafts (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id),
-  threads_account_id TEXT NOT NULL REFERENCES threads_accounts(id),
+  threads_account_id TEXT REFERENCES threads_accounts(id),
+    -- 作成時はNULL。POST /drafts/:id/schedule で予約設定した時点で確定する
   group_id TEXT REFERENCES groups(id),
   project_id TEXT REFERENCES projects(id),
   parent_draft_id TEXT REFERENCES drafts(id),
@@ -123,6 +125,25 @@ CREATE TABLE draft_engagement_snapshots (
   UNIQUE(draft_id, snapshot_stage)
 );
 ```
+
+### draft_generation_jobs
+```sql
+CREATE TABLE draft_generation_jobs (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  group_id TEXT REFERENCES groups(id),
+  project_id TEXT REFERENCES projects(id),
+  prompt TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'processing',
+    -- 'processing' | 'completed' | 'failed'
+  progress_message TEXT,
+  draft_id TEXT REFERENCES drafts(id),
+  error_message TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+```
+`POST /drafts/generate` が作成する非同期生成ジョブの状態。drafts本体と同様、生成もThreadsアカウントに依存しない（アカウントは`POST /drafts/:id/schedule`で初めて確定する）ため`threads_account_id`は持たない。Cloudflare Workersには常駐プロセスがないため、リクエストハンドラ内で `ctx.waitUntil()` により生成処理を継続実行しつつ、進捗をこのテーブルに書き込む。`GET /drafts/generate/:jobId` はこの行をポーリングして返す（8章参照）。
 
 ### api_keys
 ```sql
@@ -181,13 +202,13 @@ CREATE TABLE api_keys (
 | メソッド | パス | 概要 |
 |---|---|---|
 | GET | `/drafts` | 一覧（account_id/group_id/status/rating_min等でフィルタ） |
-| POST | `/drafts` | 手動作成 |
+| POST | `/drafts` | 手動作成（Threadsアカウントには紐付けない） |
 | GET | `/drafts/:id` | 詳細（評価・実測実績含む） |
 | PATCH | `/drafts/:id` | 編集・評価更新 |
 | DELETE | `/drafts/:id` | 削除 |
 | POST | `/drafts/generate` | AI生成リクエスト（非同期・エージェント的フロー） |
 | GET | `/drafts/generate/:jobId` | 生成ジョブのステータス確認（ポーリング用） |
-| POST | `/drafts/:id/schedule` | 予約設定 |
+| POST | `/drafts/:id/schedule` | 予約設定（`threads_account_id`必須。ここで初めてThreadsアカウントと紐付く） |
 | POST | `/drafts/:id/cancel-schedule` | 予約解除 |
 | GET | `/drafts/:id/engagement` | 実測エンゲージメントのスナップショット一覧 |
 

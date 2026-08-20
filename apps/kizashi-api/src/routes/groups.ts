@@ -1,5 +1,11 @@
 import { Hono } from "hono";
-import { generateId, createGroupInputSchema, updateGroupInputSchema, type Group } from "kizashi-core";
+import {
+  generateId,
+  createGroupInputSchema,
+  updateGroupInputSchema,
+  getGroupEngagementStats,
+  type Group,
+} from "kizashi-core";
 import type { Env } from "../env";
 import { requireAuth } from "../middleware/auth";
 
@@ -17,6 +23,19 @@ groups.get("/", async (c) => {
     .bind(userId)
     .all<Group>();
   return c.json({ groups: results });
+});
+
+groups.get("/:id/stats", async (c) => {
+  const userId = c.get("userId");
+  const id = c.req.param("id");
+
+  const existing = await c.env.DB.prepare("SELECT id FROM groups WHERE id = ? AND user_id = ?")
+    .bind(id, userId)
+    .first();
+  if (!existing) return c.json({ error: "not_found" }, 404);
+
+  const stats = await getGroupEngagementStats(c.env.DB, userId, id);
+  return c.json({ stats });
 });
 
 groups.post("/", async (c) => {

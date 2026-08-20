@@ -14,7 +14,7 @@ export type DraftStatus = (typeof DRAFT_STATUSES)[number];
 export interface Draft {
   id: string;
   user_id: string;
-  threads_account_id: string;
+  threads_account_id: string | null;
   group_id: string | null;
   project_id: string | null;
   parent_draft_id: string | null;
@@ -31,7 +31,6 @@ export interface Draft {
 }
 
 export const createDraftInputSchema = z.object({
-  threads_account_id: z.string().min(1),
   group_id: z.string().min(1).nullish(),
   project_id: z.string().min(1).nullish(),
   parent_draft_id: z.string().min(1).nullish(),
@@ -52,6 +51,7 @@ export const updateDraftInputSchema = z.object({
 export type UpdateDraftInput = z.infer<typeof updateDraftInputSchema>;
 
 export const scheduleDraftInputSchema = z.object({
+  threads_account_id: z.string().min(1),
   scheduled_at: z.string().refine((v) => !Number.isNaN(Date.parse(v)), "scheduled_at must be a valid ISO datetime"),
   parent_draft_id: z.string().min(1).nullish(),
 });
@@ -94,14 +94,13 @@ export async function createDraft(
   await db
     .prepare(
       `INSERT INTO drafts (
-        id, user_id, threads_account_id, group_id, project_id, parent_draft_id,
+        id, user_id, group_id, project_id, parent_draft_id,
         content, status, rating, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?)`
     )
     .bind(
       id,
       userId,
-      input.threads_account_id,
       input.group_id ?? null,
       input.project_id ?? null,
       input.parent_draft_id ?? null,
