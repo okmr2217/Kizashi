@@ -29,6 +29,16 @@ export interface Draft {
   updated_at: string;
 }
 
+export type DraftGenerationStatus = "processing" | "completed" | "failed";
+
+export interface DraftGenerationJob {
+  job_id: string;
+  status: DraftGenerationStatus;
+  progress_message: string | null;
+  draft_id: string | null;
+  error_message: string | null;
+}
+
 export interface EngagementSnapshot {
   id: string;
   draft_id: string;
@@ -231,6 +241,13 @@ export const api = {
     }),
   deleteDraft: (id: string) =>
     request<void>(`/drafts/${id}`, { method: "DELETE" }),
+  generateDraft: (input: { group_id?: string | null; project_id?: string | null; prompt: string }) =>
+    request<{ job_id: string; status: DraftGenerationStatus }>("/drafts/generate", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  getGenerationJob: (jobId: string) =>
+    request<DraftGenerationJob>(`/drafts/generate/${jobId}`),
 
   listGroups: () => request<{ groups: Group[] }>("/groups"),
   createGroup: (input: { name: string; description?: string | null }) =>
