@@ -8,7 +8,8 @@
   "scripts": {
     "dev:web": "pnpm --filter kizashi-web dev",
     "dev:api": "pnpm --filter kizashi-api dev",
-    "dev:mcp": "pnpm --filter kizashi-mcp dev"
+    "dev:mcp": "pnpm --filter kizashi-mcp dev",
+    "test": "pnpm -r --if-present run test"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

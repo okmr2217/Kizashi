@@ -29,6 +29,7 @@ function OnboardingPageInner() {
 
   const [accounts, setAccounts] = useState<ThreadsAccount[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -57,6 +58,17 @@ function OnboardingPageInner() {
     window.location.href = `${API_BASE_URL}/threads-accounts/oauth/start`;
   }
 
+  async function disconnectAccount(id: string, label: string) {
+    if (!window.confirm(`アカウント「${label}」の連携を解除します。よろしいですか？`)) return;
+    setActionError(null);
+    try {
+      await api.deleteThreadsAccount(id);
+      await load();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "連携解除に失敗しました");
+    }
+  }
+
   const hasAccounts = (accounts?.length ?? 0) > 0;
 
   return (
@@ -83,6 +95,12 @@ function OnboardingPageInner() {
           </p>
         )}
 
+        {actionError && (
+          <p className="rounded-lg border border-kz-red bg-kz-red-soft px-3 py-2 text-[13px] text-kz-red">
+            {actionError}
+          </p>
+        )}
+
         {loading ? (
           <p className="text-[13.5px] text-kz-muted">読み込み中...</p>
         ) : hasAccounts ? (
@@ -90,12 +108,21 @@ function OnboardingPageInner() {
             {accounts!.map((a) => (
               <li
                 key={a.id}
-                className="flex items-center justify-between rounded-lg border border-kz-border bg-kz-paper-dim px-3 py-2.5 text-[13.5px] text-kz-ink"
+                className="flex items-center justify-between gap-3 rounded-lg border border-kz-border bg-kz-paper-dim px-3 py-2.5 text-[13.5px] text-kz-ink"
               >
-                <span>{a.display_name ?? a.threads_user_id}</span>
-                <span className="font-kz-mono text-xs text-kz-muted">
-                  {a.is_active ? "連携中" : "無効"}
-                </span>
+                <span className="min-w-0 truncate">{a.display_name ?? a.threads_user_id}</span>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="font-kz-mono text-xs text-kz-muted">
+                    {a.is_active ? "連携中" : "無効"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => disconnectAccount(a.id, a.display_name ?? a.threads_user_id)}
+                    className="rounded-lg border border-kz-red px-2.5 py-1 text-[12px] text-kz-red hover:bg-kz-red-soft"
+                  >
+                    連携解除
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
