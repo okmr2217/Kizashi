@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "hono": "^4",
     "kizashi-core": "workspace:*"
   },
   "devDependencies": {

@@ -55,7 +55,7 @@ threadsAccounts.get("/oauth/callback", async (c) => {
   deleteCookie(c, OAUTH_STATE_COOKIE_NAME, { path: "/" });
 
   if (!code || !state || !expectedState || state !== expectedState) {
-    return c.json({ error: "invalid oauth state" }, 400);
+    return c.redirect(`${c.env.FRONTEND_ORIGIN}/onboarding?error=1`, 302);
   }
 
   try {
@@ -99,15 +99,10 @@ threadsAccounts.get("/oauth/callback", async (c) => {
         .run();
     }
 
-    return c.json({
-      status: "connected",
-      threads_account_id: accountId,
-      threads_user_id: profile.id,
-      display_name: profile.username ?? null,
-      token_expires_at: tokenExpiresAt,
-    });
+    return c.redirect(`${c.env.FRONTEND_ORIGIN}/onboarding?connected=1`, 302);
   } catch (err) {
-    return c.json({ error: "threads oauth callback failed", detail: String(err) }, 502);
+    console.error("threads oauth callback failed", err);
+    return c.redirect(`${c.env.FRONTEND_ORIGIN}/onboarding?error=1`, 302);
   }
 });
 
