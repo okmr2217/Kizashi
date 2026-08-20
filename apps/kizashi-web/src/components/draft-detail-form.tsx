@@ -34,6 +34,9 @@ export function DraftDetailForm({
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
+  const isScheduleManaged =
+    draft.status === "scheduled" || draft.status === "ready_to_publish" || draft.status === "published";
+
   const dirty =
     content !== draft.content ||
     groupId !== (draft.group_id ?? "") ||
@@ -174,6 +177,7 @@ export function DraftDetailForm({
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as Draft["status"])}
+            disabled={isScheduleManaged}
             className={selectClass}
           >
             {STATUS_OPTIONS.map((s) => (
@@ -182,6 +186,11 @@ export function DraftDetailForm({
               </option>
             ))}
           </select>
+          {isScheduleManaged && (
+            <span className="text-[11.5px] text-kz-muted">
+              予約中・投稿済みのステータスは下部の「予約投稿」欄から変更してください
+            </span>
+          )}
         </label>
       </div>
     </div>

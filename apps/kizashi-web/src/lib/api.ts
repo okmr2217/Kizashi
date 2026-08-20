@@ -241,6 +241,16 @@ export const api = {
     }),
   deleteDraft: (id: string) =>
     request<void>(`/drafts/${id}`, { method: "DELETE" }),
+  scheduleDraft: (
+    id: string,
+    input: { threads_account_id: string; scheduled_at: string; parent_draft_id?: string | null }
+  ) =>
+    request<{ draft: Draft }>(`/drafts/${id}/schedule`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  cancelSchedule: (id: string) =>
+    request<{ draft: Draft }>(`/drafts/${id}/cancel-schedule`, { method: "POST" }),
   generateDraft: (input: { group_id?: string | null; project_id?: string | null; prompt: string }) =>
     request<{ job_id: string; status: DraftGenerationStatus }>("/drafts/generate", {
       method: "POST",
