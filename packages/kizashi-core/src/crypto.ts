@@ -117,3 +117,26 @@ async function hmacSign(secret: string, data: string): Promise<string> {
   const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(data));
   return toBase64Url(new Uint8Array(signature));
 }
+
+// Meta(Facebook/Threads)のDeauthorize/Data Deletion Callback向けsigned_request検証。
+// 形式: base64url(HMAC-SHA256署名).base64url(JSONペイロード)。署名はappSecretをキーに
+// エンコード済みpayload文字列(デコード前)に対して計算する。
+// 参照: https://developers.facebook.com/docs/development/create-an-app/app-dashboard/data-deletion-callback/
+export async function verifyMetaSignedRequest(
+  appSecret: string,
+  signedRequest: string,
+): Promise<Record<string, unknown> | null> {
+  const [encodedSig, encodedPayload] = signedRequest.split(".");
+  if (!encodedSig || !encodedPayload) return null;
+
+  const expectedSig = await hmacSign(appSecret, encodedPayload);
+  if (expectedSig !== encodedSig) return null;
+
+  try {
+    const payload = JSON.parse(new TextDecoder().decode(fromBase64Url(encodedPayload)));
+    if (payload.algorithm !== "HMAC-SHA256") return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}

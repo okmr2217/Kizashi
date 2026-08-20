@@ -7,6 +7,7 @@ export {
   verifyPassword,
   signSessionToken,
   verifySessionToken,
+  verifyMetaSignedRequest,
 } from "./crypto";
 export * from "./ids";
 export * from "./drafts";
