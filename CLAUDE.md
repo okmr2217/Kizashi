@@ -70,6 +70,7 @@ kizashi/
 - `kizashi-api` / `kizashi-mcp` / `kizashi-web` の3 Workerとも Cloudflareへデプロイ済み（`https://kizashi-api.okumuradaichi2007.workers.dev` / `https://kizashi-mcp.okumuradaichi2007.workers.dev` / `https://kizashi-web.okumuradaichi2007.workers.dev`）
 - `kizashi-web` は `@opennextjs/cloudflare` を導入（`apps/kizashi-web/wrangler.jsonc`, `open-next.config.ts`）。デプロイは `pnpm --filter kizashi-web cf:deploy`
 - `kizashi-api` のWorkers Secrets（`TOKEN_ENCRYPTION_KEY` / `AUTH_SESSION_SECRET` / `FRONTEND_ORIGIN`）は設定済み。`THREADS_APP_ID` / `THREADS_APP_SECRET` / `THREADS_REDIRECT_URI` は現状プレースホルダーのため、実際のThreads OAuth連携には正しい値の再設定（`wrangler secret put`）が必要
+- `ANTHROPIC_API_KEY`（内部AI生成 `POST /drafts/generate` 用）はローカルと本番で**必ず別キー**を発行して使い分ける（Anthropic Console上で `kizashi-api-local` / `kizashi-api-production` のように用途ごとに分けて発行）。ローカルは `apps/kizashi-api/.dev.vars` の `ANTHROPIC_API_KEY`、本番は `wrangler secret put ANTHROPIC_API_KEY` でそれぞれ設定する（保存場所自体が別なので、値さえ別キーにしておけば漏えい時の影響範囲や利用量の切り分けができる）。取得手順はClipnoteにまとめてある（https://clipnote.paritto.dev/p/8ceecff1-8cd9-48b7-9e80-5006b2307c56）
 - `kizashi-mcp` の `wrangler.jsonc` の `database_id` は `kizashi-api` と同じD1 (`kizashi-db`) を指すよう修正済み
 - `kizashi-web`のSSR（Draft一覧・詳細）からkizashi-apiを呼ぶ処理は、`*.workers.dev`同士の直接fetchだとCloudflareのエラー1042（Worker間でCloudflare IP宛の直接fetchはブロックされる）が発生するため、`wrangler.jsonc`の`services`バインディング（`API` → `kizashi-api`）経由で呼び出す（`apps/kizashi-web/src/lib/api.ts`の`getServerFetcher`）。ブラウザからの直接呼び出し（ログイン/サインアップ等のクライアントコンポーネント）はこの制約を受けないため通常のfetchのまま
 
