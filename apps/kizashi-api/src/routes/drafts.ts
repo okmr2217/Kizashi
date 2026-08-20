@@ -153,13 +153,15 @@ drafts.patch("/:id", async (c) => {
   const projectId = data.project_id !== undefined ? data.project_id : existing.project_id;
   const rating = data.rating !== undefined ? data.rating : existing.rating;
   const status = data.status ?? existing.status;
+  const memo = data.memo !== undefined ? data.memo : existing.memo;
+  const aiMemo = data.ai_memo !== undefined ? data.ai_memo : existing.ai_memo;
   const now = new Date().toISOString();
 
   await c.env.DB.prepare(
-    `UPDATE drafts SET content = ?, group_id = ?, project_id = ?, rating = ?, status = ?, updated_at = ?
+    `UPDATE drafts SET content = ?, group_id = ?, project_id = ?, rating = ?, status = ?, memo = ?, ai_memo = ?, updated_at = ?
      WHERE id = ? AND user_id = ?`
   )
-    .bind(content, groupId, projectId, rating, status, now, id, userId)
+    .bind(content, groupId, projectId, rating, status, memo, aiMemo, now, id, userId)
     .run();
 
   const draft = await c.env.DB.prepare("SELECT * FROM drafts WHERE id = ?")

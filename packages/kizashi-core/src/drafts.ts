@@ -26,6 +26,8 @@ export interface Draft {
   published_at: string | null;
   threads_post_id: string | null;
   failure_reason: string | null;
+  memo: string | null;
+  ai_memo: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -36,6 +38,8 @@ export const createDraftInputSchema = z.object({
   parent_draft_id: z.string().min(1).nullish(),
   content: z.string().min(1, "content is required"),
   rating: z.number().int().min(1).max(5).nullish(),
+  memo: z.string().nullish(),
+  ai_memo: z.string().nullish(),
 });
 
 export type CreateDraftInput = z.infer<typeof createDraftInputSchema>;
@@ -46,6 +50,8 @@ export const updateDraftInputSchema = z.object({
   content: z.string().min(1).optional(),
   rating: z.number().int().min(1).max(5).nullish(),
   status: z.enum(DRAFT_STATUSES).optional(),
+  memo: z.string().nullish(),
+  ai_memo: z.string().nullish(),
 });
 
 export type UpdateDraftInput = z.infer<typeof updateDraftInputSchema>;
@@ -95,8 +101,8 @@ export async function createDraft(
     .prepare(
       `INSERT INTO drafts (
         id, user_id, group_id, project_id, parent_draft_id,
-        content, status, rating, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?)`
+        content, status, rating, memo, ai_memo, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?)`
     )
     .bind(
       id,
@@ -106,6 +112,8 @@ export async function createDraft(
       input.parent_draft_id ?? null,
       input.content,
       input.rating ?? null,
+      input.memo ?? null,
+      input.ai_memo ?? null,
       now,
       now
     )

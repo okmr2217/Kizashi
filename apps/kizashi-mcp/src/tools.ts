@@ -48,7 +48,7 @@ async function getOwnedProject(env: Env, userId: string, projectId: string) {
 export const TOOLS: ToolDefinition[] = [
   {
     name: "list_drafts",
-    description: "条件フィルタ済みDraft一覧（軽量版）を取得する",
+    description: "条件フィルタ済みDraft一覧（軽量版）を取得する。各Draftのmemo（人間メモ）・ai_memo（AIメモ）も含まれる",
     scope: "drafts:read",
     inputSchema: {
       type: "object",
@@ -99,7 +99,7 @@ export const TOOLS: ToolDefinition[] = [
   },
   {
     name: "get_draft",
-    description: "Draft詳細（本文・評価・全エンゲージメントスナップショット）を取得する",
+    description: "Draft詳細（本文・評価・memo（人間メモ）・ai_memo（AIメモ）・全エンゲージメントスナップショット）を取得する",
     scope: "drafts:read",
     inputSchema: {
       type: "object",
@@ -238,6 +238,7 @@ export const TOOLS: ToolDefinition[] = [
         parent_draft_id: { type: "string" },
         content: { type: "string" },
         rating: { type: "integer", minimum: 1, maximum: 5 },
+        ai_memo: { type: "string", description: "AIによる生成理由・狙い・参考にした過去Draft等（任意）" },
       },
       required: ["content"],
       additionalProperties: false,
