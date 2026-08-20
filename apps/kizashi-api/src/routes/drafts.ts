@@ -232,6 +232,52 @@ drafts.post("/:id/schedule", async (c) => {
   return c.json({ draft });
 });
 
+drafts.post("/:id/cancel-schedule", async (c) => {
+  const userId = c.get("userId");
+  const id = c.req.param("id");
+
+  const existing = await c.env.DB.prepare("SELECT * FROM drafts WHERE id = ? AND user_id = ?")
+    .bind(id, userId)
+    .first<Draft>();
+  if (!existing) return c.json({ error: "not_found" }, 404);
+  if (existing.status !== "scheduled" && existing.status !== "ready_to_publish") {
+    return c.json({ error: "validation_error", details: "draft is not scheduled" }, 400);
+  }
+
+  const now = new Date().toISOString();
+
+  // 対象Draftを未予約に戻したうえで、それに連なる予約中の子孫Draftも
+  // 親が投稿されない以上ずっと投稿可能フラグが立たなくなるため、
+  // 予約投稿実行ジョブの失敗伝播（markPublishFailed）と同じ考え方でカスケードして戻す。
+  let frontier = [id];
+  const toReset = [id];
+  while (frontier.length > 0) {
+    const placeholders = frontier.map(() => "?").join(",");
+    const { results: children } = await c.env.DB.prepare(
+      `SELECT id FROM drafts WHERE parent_draft_id IN (${placeholders}) AND status IN ('scheduled', 'ready_to_publish')`
+    )
+      .bind(...frontier)
+      .all<{ id: string }>();
+    frontier = children.map((child) => child.id);
+    toReset.push(...frontier);
+  }
+
+  for (const draftId of toReset) {
+    await c.env.DB.prepare(
+      `UPDATE drafts SET status = 'draft', threads_account_id = NULL, scheduled_at = NULL, parent_draft_id = NULL,
+         can_publish_after_parent = 0, failure_reason = NULL, updated_at = ?
+       WHERE id = ?`
+    )
+      .bind(now, draftId)
+      .run();
+  }
+
+  const draft = await c.env.DB.prepare("SELECT * FROM drafts WHERE id = ?")
+    .bind(id)
+    .first<Draft>();
+  return c.json({ draft });
+});
+
 drafts.delete("/:id", async (c) => {
   const userId = c.get("userId");
   const id = c.req.param("id");

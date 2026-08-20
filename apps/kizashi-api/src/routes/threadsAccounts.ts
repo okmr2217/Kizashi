@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import { encryptToken } from "kizashi-core";
+import { encryptToken, verifyMetaSignedRequest } from "kizashi-core";
 import type { Env } from "../env";
 import { requireAuth } from "../middleware/auth";
 import {
@@ -16,6 +16,43 @@ const OAUTH_STATE_MAX_AGE_SECONDS = 60 * 10;
 type Variables = { userId: string };
 
 const threadsAccounts = new Hono<{ Bindings: Env; Variables: Variables }>();
+
+// Metaがユーザーのブラウザセッションを介さず直接呼び出すWebhookのため、
+// 以下の requireAuth より前に定義して認証対象から外す。
+threadsAccounts.post("/oauth/deauthorize", async (c) => {
+  const form = await c.req.parseBody();
+  const signedRequest = typeof form.signed_request === "string" ? form.signed_request : null;
+  if (!signedRequest) return c.text("missing signed_request", 400);
+
+  const payload = await verifyMetaSignedRequest(c.env.THREADS_APP_SECRET, signedRequest);
+  if (!payload || typeof payload.user_id !== "string") return c.text("invalid signed_request", 400);
+
+  await c.env.DB.prepare(
+    "UPDATE threads_accounts SET is_active = 0, updated_at = datetime('now') WHERE threads_user_id = ?",
+  )
+    .bind(payload.user_id)
+    .run();
+
+  return c.json({ ok: true });
+});
+
+threadsAccounts.post("/oauth/data-deletion", async (c) => {
+  const form = await c.req.parseBody();
+  const signedRequest = typeof form.signed_request === "string" ? form.signed_request : null;
+  if (!signedRequest) return c.text("missing signed_request", 400);
+
+  const payload = await verifyMetaSignedRequest(c.env.THREADS_APP_SECRET, signedRequest);
+  if (!payload || typeof payload.user_id !== "string") return c.text("invalid signed_request", 400);
+
+  await c.env.DB.prepare("DELETE FROM threads_accounts WHERE threads_user_id = ?").bind(payload.user_id).run();
+
+  const confirmationCode = crypto.randomUUID();
+  return c.json({
+    // 削除状況を表示する専用ページは未実装のため、暫定的にonboarding画面を案内する。
+    url: `${c.env.FRONTEND_ORIGIN}/onboarding`,
+    confirmation_code: confirmationCode,
+  });
+});
 
 threadsAccounts.use("*", requireAuth);
 
