@@ -238,6 +238,13 @@ CREATE TABLE api_keys (
 | `get_project_file` | 参照ファイルのMarkdown本文取得 | `projects:read` |
 | `create_draft` | Draft新規作成（書き込み系） | `drafts:write` |
 
+### トランスポート・認証
+- `POST /mcp`（ステートレスなStreamable HTTP。セッションを張らずリクエストごとにJSON-RPCレスポンスを1件返す）
+- 認証は `Authorization: Bearer <APIキー>` ヘッダー（`POST /api-keys` で発行した生キーをそのまま使う）。キー無効・スコープ不足はそれぞれ別に扱う：
+  - キー自体が無効／失効済み → HTTPレベルで401（JSON-RPC error `-32001`）
+  - キーは有効だがツールの必要スコープを満たさない → `tools/call` の結果を `isError: true` で返す（ツール実行エラーとして表現し、プロトコルエラーにはしない）
+- Claude Desktop等からの接続は `mcp-remote` 経由で上記URL・ヘッダーを指定する
+
 ### create_draft の実装方針
 - コア処理（バリデーション・DB書き込み）は共有パッケージ（`packages/kizashi-core` 想定）に切り出す
 - `kizashi-api`（内部AI生成）・`kizashi-mcp`（外部AI向け）の両方から同一ロジックを呼び出す

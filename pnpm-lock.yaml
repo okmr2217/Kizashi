@@ -38,6 +38,9 @@ importers:
 
   apps/kizashi-mcp:
     dependencies:
+      hono:
+        specifier: ^4
+        version: 4.13.3
       kizashi-core:
         specifier: workspace:*
         version: link:../../packages/kizashi-core
