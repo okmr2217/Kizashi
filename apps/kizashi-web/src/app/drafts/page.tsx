@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { DraftFilters } from "@/components/draft-filters";
 import { NewDraftForm } from "@/components/new-draft-form";
+import { GenerateDraftModal } from "@/components/generate-draft-modal";
 import { StatusBadge } from "@/components/status-badge";
 import { StarRating } from "@/components/star-rating";
 import { formatDateTime } from "@/lib/format";
@@ -134,7 +135,16 @@ function DraftsPageInner() {
         <DraftFilters groups={groups} />
       </div>
 
-      <NewDraftForm groups={groups} projects={projects} onCreated={load} />
+      <div className="flex flex-col gap-2.5">
+        <NewDraftForm groups={groups} projects={projects} onCreated={load} />
+        <GenerateDraftModal
+          groups={groups}
+          projects={projects}
+          onGenerated={() => {
+            load();
+          }}
+        />
+      </div>
 
       {drafts.length === 0 ? (
         <p className="rounded-xl border border-dashed border-kz-border bg-kz-surface px-8 py-12 text-center text-[13.5px] text-kz-muted">
