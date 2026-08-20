@@ -57,6 +57,9 @@ importers:
       '@base-ui/react':
         specifier: ^1.7.0
         version: 1.7.0(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@opennextjs/cloudflare':
+        specifier: ^1.20.2
+        version: 1.20.2(next@16.3.1(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(wrangler@4.124.0(@cloudflare/workers-types@5.20260818.1))
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -85,9 +88,6 @@ importers:
         specifier: ^1.4.0
         version: 1.4.0
     devDependencies:
-      '@opennextjs/cloudflare':
-        specifier: ^1.20.2
-        version: 1.20.2(next@16.3.1(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(wrangler@4.124.0(@cloudflare/workers-types@5.20260818.1))
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.3.3
