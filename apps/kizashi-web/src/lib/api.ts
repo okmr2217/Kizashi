@@ -67,6 +67,50 @@ export interface ThreadsAccount {
   created_at: string;
 }
 
+export interface ProjectFile {
+  id: string;
+  project_id: string;
+  title: string;
+  content_markdown: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GroupRatingDistribution {
+  1: number;
+  2: number;
+  3: number;
+  4: number;
+  5: number;
+}
+
+export interface GroupStats {
+  group_id: string;
+  draft_count: number;
+  rated_draft_count: number;
+  average_rating: number | null;
+  rating_distribution: GroupRatingDistribution;
+  confirmed_engagement_draft_count: number;
+  average_views: number | null;
+  average_likes: number | null;
+  average_replies: number | null;
+  average_reposts: number | null;
+  average_quotes: number | null;
+}
+
+export const API_KEY_SCOPES = ["drafts:read", "drafts:write", "projects:read"] as const;
+export type ApiKeyScope = (typeof API_KEY_SCOPES)[number];
+
+export interface ApiKeySummary {
+  id: string;
+  user_id: string;
+  name: string;
+  scopes: ApiKeyScope[];
+  last_used_at: string | null;
+  created_at: string;
+  revoked_at: string | null;
+}
+
 class ApiError extends Error {
   constructor(
     message: string,
@@ -185,9 +229,66 @@ export const api = {
     request<void>(`/drafts/${id}`, { method: "DELETE" }),
 
   listGroups: () => request<{ groups: Group[] }>("/groups"),
+  createGroup: (input: { name: string; description?: string | null }) =>
+    request<{ group: Group }>("/groups", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  updateGroup: (id: string, input: Partial<{ name: string; description: string | null }>) =>
+    request<{ group: Group }>(`/groups/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+  deleteGroup: (id: string) => request<void>(`/groups/${id}`, { method: "DELETE" }),
+  getGroupStats: (id: string) => request<{ stats: GroupStats }>(`/groups/${id}/stats`),
+
   listProjects: () => request<{ projects: Project[] }>("/projects"),
+  createProject: (input: { name: string; default_group_id?: string | null }) =>
+    request<{ project: Project }>("/projects", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  updateProject: (
+    id: string,
+    input: Partial<{ name: string; default_group_id: string | null }>
+  ) =>
+    request<{ project: Project }>(`/projects/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+  deleteProject: (id: string) => request<void>(`/projects/${id}`, { method: "DELETE" }),
+
+  listProjectFiles: (projectId: string) =>
+    request<{ files: ProjectFile[] }>(`/projects/${projectId}/files`),
+  createProjectFile: (projectId: string, input: { title: string; content_markdown: string }) =>
+    request<{ file: ProjectFile }>(`/projects/${projectId}/files`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  updateProjectFile: (
+    projectId: string,
+    fileId: string,
+    input: Partial<{ title: string; content_markdown: string }>
+  ) =>
+    request<{ file: ProjectFile }>(`/projects/${projectId}/files/${fileId}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+  deleteProjectFile: (projectId: string, fileId: string) =>
+    request<void>(`/projects/${projectId}/files/${fileId}`, { method: "DELETE" }),
+
   listThreadsAccounts: () =>
     request<{ accounts: ThreadsAccount[] }>("/threads-accounts"),
+  deleteThreadsAccount: (id: string) =>
+    request<{ ok: true }>(`/threads-accounts/${id}`, { method: "DELETE" }),
+
+  listApiKeys: () => request<{ api_keys: ApiKeySummary[] }>("/api-keys"),
+  createApiKey: (input: { name: string; scopes: ApiKeyScope[] }) =>
+    request<{ api_key: ApiKeySummary; key: string }>("/api-keys", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  deleteApiKey: (id: string) => request<void>(`/api-keys/${id}`, { method: "DELETE" }),
 
   signup: (input: { email: string; password: string }) =>
     request<{ id: string; email: string }>("/auth/signup", {
